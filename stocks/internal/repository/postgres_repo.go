@@ -2,7 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	stdErrors "errors"
 	"stocks/internal/errors"
 	"stocks/internal/models"
 )
@@ -15,14 +14,23 @@ func NewPostgresStockRepo(db *sql.DB) *PostgresStockRepo {
 	return &PostgresStockRepo{db: db}
 }
 
-func (r *PostgresStockRepo) Add(item models.StockItem) error {
+func (r *PostgresStockRepo) getSKUInfo(sku uint32) (string, string, error) {
 	var name, itemType string
 
-	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM stock_items WHERE sku = $1)", item.SKU).Scan(&name, &itemType)
-	if stdErrors.Is(err, sql.ErrNoRows) {
-		return errors.ErrInvalidSKU
+	err := r.db.QueryRow("SELECT name, type FROM sku_info WHERE sku = $1", sku).Scan(&name, &itemType)
+	if err == sql.ErrNoRows {
+		return "", "", errors.ErrInvalidSKU
 	}
 
+	if err != nil {
+		return "", "", err
+	}
+
+	return name, itemType, nil
+}
+
+func (r *PostgresStockRepo) Add(item models.StockItem) error {
+	name, itemType, err := r.getSKUInfo(item.SKU)
 	if err != nil {
 		return err
 	}

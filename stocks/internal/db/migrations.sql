@@ -1,14 +1,16 @@
 CREATE TABLE IF NOT EXISTS stock_items (
-    sku       INTEGER PRIMARY KEY,
+    stock_id SERIAL PRIMARY KEY,
+    sku       BIGINT PRIMARY KEY,
     name      TEXT NOT NULL,
     type      TEXT NOT NULL,
     price     NUMERIC(10, 2) NOT NULL,
     count     INTEGER NOT NULL DEFAULT 0,
     location  TEXT NOT NULL
+    CONSTRAINT fk_sku FOREIGN KEY (sku) REFERENCES sku_info (sku)
 );
 
 CREATE TABLE IF NOT EXISTS sku_info (
-    sku     INTEGER PRIMARY KEY,
+    sku     BIGINT PRIMARY KEY,
     name    TEXT NOT NULL,
     type    TEXT NOT NULL
 );
