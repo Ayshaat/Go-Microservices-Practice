@@ -2,6 +2,7 @@ package stockclient
 
 import (
 	"cart/internal/models"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,7 +34,7 @@ func validateURL(rawurl string) error {
 	return nil
 }
 
-func (c *httpStockClient) GetBySKU(sku uint32) (models.StockItem, error) {
+func (c *httpStockClient) GetBySKU(ctx context.Context, sku uint32) (models.StockItem, error) {
 	url := fmt.Sprintf("%s/stocks/item/get?sku=%d", c.baseURL, sku)
 
 	if err := validateURL(url); err != nil {
@@ -44,7 +45,7 @@ func (c *httpStockClient) GetBySKU(sku uint32) (models.StockItem, error) {
 		Timeout: httpTimeout,
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return models.StockItem{}, fmt.Errorf("failed to create request: %w", err)
 	}

@@ -26,7 +26,7 @@ func (h *Handler) ListItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := h.usecase.List(req.UserID)
+	items, err := h.usecase.List(r.Context(), req.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

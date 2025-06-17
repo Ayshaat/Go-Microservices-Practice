@@ -5,12 +5,19 @@ import (
 	"cart/internal/repository"
 	"cart/internal/stockclient"
 	"cart/internal/usecase"
+	"database/sql"
 	"log"
 	"net/http"
 )
 
 func main() {
-	cartRepo := repository.NewInMemoryCartRepo()
+	db, err := sql.Open("postgres", "postgres://user:password@localhost:5432/dbname?sslmode=disable")
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	cartRepo := repository.NewPostgresCartRepo(db)
 	stockClient := stockclient.New("http://localhost:8080")
 	cartUseCase := usecase.NewCartUsecase(cartRepo, stockClient)
 	handler := delivery.NewHandler(cartUseCase)

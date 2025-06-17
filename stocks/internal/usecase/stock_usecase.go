@@ -1,13 +1,9 @@
 package usecase
 
 import (
-	"errors"
+	"stocks/internal/errors"
 	"stocks/internal/models"
 	"stocks/internal/repository"
-)
-
-var (
-	ErrInvalidSKU = errors.New("invalid SKU — not registered")
 )
 
 type stockUseCase struct {
@@ -21,13 +17,13 @@ func NewStockUsecase(repo repository.StockRepository) StockUseCase {
 }
 
 func (u *stockUseCase) Add(item models.StockItem) error {
-	skuInfo, ok := models.SKUDetails[item.SKU]
-	if !ok {
-		return ErrInvalidSKU
+	name, typ, err := u.repo.GetSKUInfo(item.SKU)
+	if err != nil {
+		return errors.ErrInvalidSKU
 	}
 
-	item.Name = skuInfo.Name
-	item.Type = skuInfo.Type
+	item.Name = name
+	item.Type = typ
 
 	return u.repo.Add(item)
 }

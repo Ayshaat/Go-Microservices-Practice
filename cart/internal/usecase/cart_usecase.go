@@ -1,14 +1,11 @@
 package usecase
 
 import (
+	"cart/internal/errors"
 	"cart/internal/models"
 	"cart/internal/repository"
 	"cart/internal/stockclient"
-	"errors"
-)
-
-var (
-	ErrInvalidSKU = errors.New("invalid SKU — not registered")
+	"context"
 )
 
 type cartUseCase struct {
@@ -23,10 +20,10 @@ func NewCartUsecase(repo repository.CartRepository, stockRepo stockclient.StockR
 	}
 }
 
-func (u *cartUseCase) Add(item models.CartItem) error {
-	_, err := u.stockRepo.GetBySKU(item.SKU)
+func (u *cartUseCase) Add(ctx context.Context, item models.CartItem) error {
+	_, err := u.stockRepo.GetBySKU(ctx, item.SKU)
 	if err != nil {
-		return ErrInvalidSKU
+		return errors.ErrInvalidSKU
 	}
 
 	return u.repo.Add(item)
@@ -36,8 +33,22 @@ func (u *cartUseCase) Delete(userID int64, sku uint32) error {
 	return u.repo.Delete(userID, sku)
 }
 
-func (u *cartUseCase) List(userID int64) ([]models.CartItem, error) {
-	return u.repo.List(userID)
+func (u *cartUseCase) List(ctx context.Context, userID int64) ([]models.CartItem, error) {
+	items, err := u.repo.List(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range items {
+		stockItem, err := u.stockRepo.GetBySKU(ctx, items[i].SKU)
+		if err != nil {
+			return nil, err
+		}
+		items[i].Price = stockItem.Price
+		items[i].Count = stockItem.Count
+	}
+
+	return items, nil
 }
 
 func (u *cartUseCase) Clear(userID int64) error {
