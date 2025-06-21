@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+
+	"stocks/internal/config"
 	"stocks/internal/db"
 	"stocks/internal/delivery"
 	"stocks/internal/repository"
@@ -11,12 +16,16 @@ import (
 )
 
 func main() {
-	connStr := os.Getenv("DATABASE_URL")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
 
-	sqlDB, err := db.ConnectDB(connStr)
+	sqlDB, err := db.ConnectDB(cfg.PostgresConnStr())
 	if err != nil {
 		log.Fatalf("failed to connect to db: %v", err)
 	}
+	defer sqlDB.Close()
 
 	repo := repository.NewPostgresStockRepo(sqlDB)
 	useCase := usecase.NewStockUsecase(repo)
@@ -26,16 +35,34 @@ func main() {
 	handler.RegisterRoutes(mux)
 
 	srv := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":" + os.Getenv("HTTP_PORT"),
 		Handler:      mux,
-		ReadTimeout:  readTimeout,
-		WriteTimeout: writeTimeout,
-		IdleTimeout:  idleTimeout,
+		ReadTimeout:  config.ReadTimeout,
+		WriteTimeout: config.WriteTimeout,
+		IdleTimeout:  config.IdleTimeout,
 	}
 
-	log.Println("Starting server on :8080...")
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	if err := srv.ListenAndServe(); err != nil {
-		log.Fatalf("stocks server failed: %v", err)
+	go func() {
+		log.Println("Starting server on port", os.Getenv("HTTP_PORT"))
+
+		if err := srv.ListenAndServe(); err != nil {
+			log.Fatalf("stocks server failed: %v", err)
+		}
+	}()
+
+	<-stop
+
+	log.Println("Shutting down stocks server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), config.WriteTimeout)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Stocks Server Shutdown Failed: %v", err)
 	}
+
+	log.Println("Stocks server gracefully stopped")
 }

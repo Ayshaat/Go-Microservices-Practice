@@ -20,16 +20,6 @@ func (dto CartItemDTO) ToModel() models.CartItem {
 	}
 }
 
-func FromModel(item models.CartItem) CartItemDTO {
-	return CartItemDTO{
-		UserID: item.UserID,
-		SKU:    item.SKU,
-		Count:  item.Count,
-		Price:  item.Price,
-		Stock:  item.Stock,
-	}
-}
-
 type StockItemDTO struct {
 	SKU      uint32 `json:"sku"`
 	Name     string `json:"name"`
@@ -47,16 +37,5 @@ func (dto StockItemDTO) ToModel() models.StockItem {
 		Type:     dto.Type,
 		Price:    dto.Price,
 		Count:    dto.Count,
-	}
-}
-
-func FromModelStock(item models.StockItem) StockItemDTO {
-	return StockItemDTO{
-		SKU:      item.SKU,
-		Name:     item.Name,
-		Location: item.Location,
-		Type:     item.Type,
-		Price:    item.Price,
-		Count:    item.Count,
 	}
 }

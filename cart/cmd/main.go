@@ -6,9 +6,13 @@ import (
 	"cart/internal/repository"
 	"cart/internal/stockclient"
 	"cart/internal/usecase"
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -24,7 +28,7 @@ func main() {
 	defer db.Close()
 
 	cartRepo := repository.NewPostgresCartRepo(db)
-	stockClient := stockclient.New("http://localhost:8080")
+	stockClient := stockclient.New(os.Getenv("STOCK_SERVICE_URL"))
 	cartUseCase := usecase.NewCartUsecase(cartRepo, stockClient)
 	handler := delivery.NewHandler(cartUseCase)
 
@@ -32,16 +36,34 @@ func main() {
 	handler.RegisterRoutes(mux)
 
 	srv := &http.Server{
-		Addr:         ":8090",
+		Addr:         ":" + os.Getenv("HTTP_PORT"),
 		Handler:      mux,
-		ReadTimeout:  readTimeout,
-		WriteTimeout: writeTimeout,
-		IdleTimeout:  idleTimeout,
+		ReadTimeout:  config.ReadTimeout,
+		WriteTimeout: config.WriteTimeout,
+		IdleTimeout:  config.IdleTimeout,
 	}
 
-	log.Println("Starting cart server on :8090...")
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	if err := srv.ListenAndServe(); err != nil {
-		log.Fatalf("server failed: %v", err)
+	go func() {
+		log.Println("Starting cart server on port", os.Getenv("HTTP_PORT"))
+
+		if err := srv.ListenAndServe(); err != nil {
+			log.Fatalf("server failed: %v", err)
+		}
+	}()
+
+	<-stop
+
+	log.Println("Shutting down cart server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), config.WriteTimeout)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Server Shutdown Failed: %v", err)
 	}
+
+	log.Println("Server gracefully stopped")
 }
