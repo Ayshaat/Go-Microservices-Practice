@@ -52,14 +52,13 @@ func (r *PostgresCartRepo) List(userID int64) ([]models.CartItem, error) {
 	var items []models.CartItem
 
 	for rows.Next() {
-		var item models.CartItem
+		var row CartItemRow
 
-		err = rows.Scan(&item.UserID, &item.SKU, &item.Count)
-		if err != nil {
+		if err = rows.Scan(&row.UserID, &row.SKU, &row.Count); err != nil {
 			return nil, err
 		}
 
-		items = append(items, item)
+		items = append(items, row.ToDomain())
 	}
 
 	if err = rows.Err(); err != nil {

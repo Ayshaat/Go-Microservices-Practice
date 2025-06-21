@@ -120,14 +120,14 @@ func (r *PostgresStockRepo) ListByLocation(location string, pageSize, currentPag
 	var items []models.StockItem
 
 	for rows.Next() {
-		var item models.StockItem
+		var row StockItemRow
 
-		err := rows.Scan(&item.SKU, &item.Name, &item.Type, &item.Price, &item.Count, &item.Location)
+		err := rows.Scan(&row.SKU, &row.Name, &row.Type, &row.Price, &row.Count, &row.Location)
 		if err != nil {
 			return nil, err
 		}
 
-		items = append(items, item)
+		items = append(items, row.ToDomain())
 	}
 
 	return items, rows.Err()

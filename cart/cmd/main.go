@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cart/internal/config"
 	"cart/internal/delivery"
 	"cart/internal/repository"
 	"cart/internal/stockclient"
@@ -11,7 +12,12 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("postgres", "postgres://user:password@localhost:5432/dbname?sslmode=disable")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+
+	db, err := sql.Open("postgres", cfg.PostgresConnStr())
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

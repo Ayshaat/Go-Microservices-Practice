@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS stock_items (
     stock_id SERIAL PRIMARY KEY,
-    sku       BIGINT PRIMARY KEY,
+    sku       BIGINT UNIQUE,
     name      TEXT NOT NULL,
     type      TEXT NOT NULL,
     price     NUMERIC(10, 2) NOT NULL,
