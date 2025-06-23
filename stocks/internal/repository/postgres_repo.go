@@ -50,9 +50,9 @@ func (r *PostgresStockRepo) Add(item models.StockItem) error {
 	}
 
 	_, err = r.db.Exec(`
-		INSERT INTO stock_items (sku, name, type, price, count, location)
+		INSERT INTO stock_items (user_id, sku, name, type, price, count, location)
 		VALUES ($1, $2, $3, $4, $5, $6)
-	`, item.SKU, item.Name, item.Type, item.Price, item.Count, item.Location)
+	`, item.UserID, item.SKU, item.Name, item.Type, item.Price, item.Count, item.Location)
 
 	return err
 }
@@ -78,9 +78,11 @@ func (r *PostgresStockRepo) Delete(sku uint32) error {
 func (r *PostgresStockRepo) GetBySKU(sku uint32) (models.StockItem, error) {
 	var item models.StockItem
 	err := r.db.QueryRow(`
-		SELECT sku, name, type, price, count, location 
-		FROM stock_items WHERE sku = $1
-	`, sku).Scan(&item.SKU, &item.Name, &item.Type, &item.Price, &item.Count, &item.Location)
+		SELECT s.user_id, s.sku, i.name, i.type, s.price, s.count, s.location 
+		FROM stock_items s
+		JOIN sku_info i ON s.sku = i.sku
+		WHERE s.sku = $1
+	`, sku).Scan(&item.UserID, &item.SKU, &item.Name, &item.Type, &item.Price, &item.Count, &item.Location)
 
 	if err == sql.ErrNoRows {
 		return models.StockItem{}, errors.ErrItemNotFound
@@ -105,9 +107,11 @@ func (r *PostgresStockRepo) GetSKUInfo(sku uint32) (string, string, error) {
 func (r *PostgresStockRepo) ListByLocation(location string, pageSize, currentPage int64) ([]models.StockItem, error) {
 	offset := (currentPage - 1) * pageSize
 	rows, err := r.db.Query(`
-		SELECT sku, name, type, price, count, location 
-		FROM stock_items WHERE location = $1 
-		ORDER BY sku 
+		SELECT s.user_id, s.sku, i.name, i.type, s.price, s.count, s.location 
+		FROM stock_items s
+		JOIN sku_info i ON s.sku = i.sku
+		WHERE s.location = $1
+		ORDER BY s.sku 
 		LIMIT $2 OFFSET $3
 	`, location, pageSize, offset)
 
@@ -122,7 +126,7 @@ func (r *PostgresStockRepo) ListByLocation(location string, pageSize, currentPag
 	for rows.Next() {
 		var row StockItemRow
 
-		err := rows.Scan(&row.SKU, &row.Name, &row.Type, &row.Price, &row.Count, &row.Location)
+		err := rows.Scan(&row.UserID, &row.SKU, &row.Name, &row.Type, &row.Price, &row.Count, &row.Location)
 		if err != nil {
 			return nil, err
 		}

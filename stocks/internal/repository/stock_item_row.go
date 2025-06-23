@@ -3,6 +3,7 @@ package repository
 import "stocks/internal/models"
 
 type StockItemRow struct {
+	UserID   int64
 	SKU      uint32
 	Name     string
 	Type     string
@@ -13,6 +14,7 @@ type StockItemRow struct {
 
 func (r *StockItemRow) ToDomain() models.StockItem {
 	return models.StockItem{
+		UserID:   r.UserID,
 		SKU:      r.SKU,
 		Name:     r.Name,
 		Type:     r.Type,

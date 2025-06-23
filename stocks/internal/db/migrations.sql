@@ -19,9 +19,8 @@ ON CONFLICT (sku) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS stock_items (
     stock_id SERIAL PRIMARY KEY,
+    user_id   BIGINT NOT NULL,
     sku       BIGINT UNIQUE REFERENCES sku_info(sku),
-    name      TEXT NOT NULL,
-    type      TEXT NOT NULL,
     price     NUMERIC(10, 2) NOT NULL,
     count     INTEGER NOT NULL DEFAULT 0,
     location  TEXT NOT NULL,
