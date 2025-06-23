@@ -1,6 +1,7 @@
 package stockclient
 
 import (
+	"bytes"
 	"cart/internal/models"
 	"context"
 	"encoding/json"
@@ -35,7 +36,14 @@ func validateURL(rawurl string) error {
 }
 
 func (c *httpStockClient) GetBySKU(ctx context.Context, sku uint32) (models.StockItem, error) {
-	url := fmt.Sprintf("%s/stocks/item/get?sku=%d", c.baseURL, sku)
+	url := fmt.Sprintf("%s/stocks/item/get", c.baseURL)
+
+	jsonBody := map[string]uint32{"sku": sku}
+
+	body, err := json.Marshal(jsonBody)
+	if err != nil {
+		return models.StockItem{}, fmt.Errorf("failed to marshal JSON: %w", err)
+	}
 
 	if err := validateURL(url); err != nil {
 		return models.StockItem{}, fmt.Errorf("invalid URL: %w", err)
@@ -45,10 +53,12 @@ func (c *httpStockClient) GetBySKU(ctx context.Context, sku uint32) (models.Stoc
 		Timeout: httpTimeout,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return models.StockItem{}, fmt.Errorf("failed to create request: %w", err)
 	}
+
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {

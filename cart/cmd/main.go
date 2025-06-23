@@ -2,17 +2,19 @@ package main
 
 import (
 	"cart/internal/config"
+	"cart/internal/db"
 	"cart/internal/delivery"
 	"cart/internal/repository"
 	"cart/internal/stockclient"
 	"cart/internal/usecase"
 	"context"
-	"database/sql"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -21,13 +23,13 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	db, err := sql.Open("postgres", cfg.PostgresConnStr())
+	database, err := db.ConnectDB(cfg.PostgresConnStr())
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
-	defer db.Close()
+	defer database.Close()
 
-	cartRepo := repository.NewPostgresCartRepo(db)
+	cartRepo := repository.NewPostgresCartRepo(database)
 	stockClient := stockclient.New(os.Getenv("STOCK_SERVICE_URL"))
 	cartUseCase := usecase.NewCartUsecase(cartRepo, stockClient)
 	handler := delivery.NewHandler(cartUseCase)
@@ -35,8 +37,13 @@ func main() {
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
 
+	port := os.Getenv("HTTP_PORT")
+	if port == "" {
+		port = "8090"
+	}
+
 	srv := &http.Server{
-		Addr:         ":" + os.Getenv("HTTP_PORT"),
+		Addr:         ":" + port,
 		Handler:      mux,
 		ReadTimeout:  config.ReadTimeout,
 		WriteTimeout: config.WriteTimeout,
@@ -47,7 +54,7 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Println("Starting cart server on port", os.Getenv("HTTP_PORT"))
+		log.Println("Starting cart server on port", port)
 
 		if err := srv.ListenAndServe(); err != nil {
 			log.Fatalf("server failed: %v", err)

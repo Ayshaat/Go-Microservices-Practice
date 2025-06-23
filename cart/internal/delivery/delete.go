@@ -1,7 +1,9 @@
 package delivery
 
 import (
+	"cart/internal/errors"
 	"encoding/json"
+	stdErrors "errors"
 	"net/http"
 )
 
@@ -18,7 +20,13 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.usecase.Delete(req.UserID, req.SKU); err != nil {
+		if stdErrors.Is(err, errors.ErrCartItemNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 

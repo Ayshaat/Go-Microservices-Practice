@@ -2,7 +2,9 @@ package delivery
 
 import (
 	"encoding/json"
+	stdErrors "errors"
 	"net/http"
+	"stocks/internal/errors"
 )
 
 func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +17,13 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 	item := dto.ToModel()
 
 	if err := h.usecase.Add(item); err != nil {
+		if stdErrors.Is(err, errors.ErrItemExists) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 

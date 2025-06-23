@@ -117,7 +117,7 @@ func (r *PostgresStockRepo) ListByLocation(location string, pageSize, currentPag
 
 	defer rows.Close()
 
-	var items []models.StockItem
+	items := make([]models.StockItem, 0)
 
 	for rows.Next() {
 		var row StockItemRow

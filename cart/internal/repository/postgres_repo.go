@@ -14,6 +14,18 @@ func NewPostgresCartRepo(db *sql.DB) *PostgresCartRepo {
 	return &PostgresCartRepo{db: db}
 }
 
+func (r *PostgresCartRepo) GetSKUInfo(sku uint32) (string, string, error) {
+	var name, typ string
+	err := r.db.QueryRow("SELECT name, type FROM sku_info WHERE sku = $1", sku).Scan(&name, &typ)
+	if err == sql.ErrNoRows {
+		return "", "", errors.ErrInvalidSKU
+	}
+	if err != nil {
+		return "", "", err
+	}
+	return name, typ, nil
+}
+
 func (r *PostgresCartRepo) Add(item models.CartItem) error {
 	_, err := r.db.Exec(`INSERT INTO cart_items (user_id, sku, count) VALUES ($1, $2, $3)`,
 		item.UserID, item.SKU, item.Count)

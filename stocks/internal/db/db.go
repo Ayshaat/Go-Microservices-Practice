@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	_ "github.com/lib/pq"
 )
 
 func ConnectDB(connStr string) (*sql.DB, error) {
@@ -25,7 +27,7 @@ func ConnectDB(connStr string) (*sql.DB, error) {
 }
 
 func runMigrations(db *sql.DB) error {
-	sqlBytes, err := os.ReadFile("stocks/db/migrations.sql")
+	sqlBytes, err := os.ReadFile("internal/db/migrations.sql")
 	if err != nil {
 		return fmt.Errorf("failed to read migrations file: %w", err)
 	}

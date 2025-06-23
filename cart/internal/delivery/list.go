@@ -32,6 +32,10 @@ func (h *Handler) ListItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if items == nil {
+		items = []models.CartItem{}
+	}
+
 	res := listResponse{
 		Items: items,
 	}

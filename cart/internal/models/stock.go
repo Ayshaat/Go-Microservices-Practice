@@ -5,6 +5,6 @@ type StockItem struct {
 	Name     string
 	Location string
 	Type     string
-	Price    uint32
+	Price    float64
 	Count    int16
 }

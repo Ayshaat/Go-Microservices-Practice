@@ -14,8 +14,8 @@ func NewHandler(u usecase.CartUseCase) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	http.HandleFunc("/cart/item/add", h.AddItem)
-	http.HandleFunc("/cart/item/delete", h.DeleteItem)
-	http.HandleFunc("/cart/list", h.ListItems)
-	http.HandleFunc("/cart/clear", h.ClearCart)
+	mux.HandleFunc("/cart/item/add", h.AddItem)
+	mux.HandleFunc("/cart/item/delete", h.DeleteItem)
+	mux.HandleFunc("/cart/list", h.ListItems)
+	mux.HandleFunc("/cart/clear", h.ClearCart)
 }

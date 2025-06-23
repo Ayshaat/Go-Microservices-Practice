@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -18,6 +20,10 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
+	if err := godotenv.Load(); err != nil {
+		return nil, fmt.Errorf("error loading .env file: %w", err)
+	}
+
 	cfg := &Config{
 		DBHost:       os.Getenv("DB_HOST"),
 		DBPort:       os.Getenv("DB_PORT"),

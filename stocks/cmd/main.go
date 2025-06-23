@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	_ "github.com/lib/pq"
+
 	"stocks/internal/config"
 	"stocks/internal/db"
 	"stocks/internal/delivery"
@@ -34,8 +36,13 @@ func main() {
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
 
+	port := os.Getenv("HTTP_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	srv := &http.Server{
-		Addr:         ":" + os.Getenv("HTTP_PORT"),
+		Addr:         ":" + port,
 		Handler:      mux,
 		ReadTimeout:  config.ReadTimeout,
 		WriteTimeout: config.WriteTimeout,
@@ -46,7 +53,7 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Println("Starting server on port", os.Getenv("HTTP_PORT"))
+		log.Println("Starting server on port", port)
 
 		if err := srv.ListenAndServe(); err != nil {
 			log.Fatalf("stocks server failed: %v", err)
