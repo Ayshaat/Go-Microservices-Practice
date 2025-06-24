@@ -29,7 +29,7 @@ func (h *Handler) ListByLocation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := h.usecase.ListByLocation(req.Location, req.PageSize, req.CurrentPage)
+	items, err := h.usecase.ListByLocation(r.Context(), req.Location, req.PageSize, req.CurrentPage)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

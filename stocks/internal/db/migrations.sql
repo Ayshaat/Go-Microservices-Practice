@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS stock_items;
+
 CREATE TABLE IF NOT EXISTS sku_info (
     sku     BIGINT PRIMARY KEY,
     name    TEXT NOT NULL,

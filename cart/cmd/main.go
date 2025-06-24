@@ -30,7 +30,11 @@ func main() {
 	defer database.Close()
 
 	cartRepo := repository.NewPostgresCartRepo(database)
-	stockClient := stockclient.New(os.Getenv("STOCK_SERVICE_URL"))
+
+	stockClient, err := stockclient.New(os.Getenv("STOCK_SERVICE_URL"))
+	if err != nil {
+		log.Fatalf("failed to create stock client: %v", err)
+	}
 	cartUseCase := usecase.NewCartUsecase(cartRepo, stockClient)
 	handler := delivery.NewHandler(cartUseCase)
 

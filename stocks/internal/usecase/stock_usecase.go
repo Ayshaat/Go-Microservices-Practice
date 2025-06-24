@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"stocks/internal/errors"
 	"stocks/internal/models"
 	"stocks/internal/repository"
@@ -16,26 +17,23 @@ func NewStockUsecase(repo repository.StockRepository) StockUseCase {
 	}
 }
 
-func (u *stockUseCase) Add(item models.StockItem) error {
-	name, typ, err := u.repo.GetSKUInfo(item.SKU)
+func (u *stockUseCase) Add(ctx context.Context, item models.StockItem) error {
+	_, _, err := u.repo.GetSKUInfo(ctx, item.SKU)
 	if err != nil {
 		return errors.ErrInvalidSKU
 	}
 
-	item.Name = name
-	item.Type = typ
-
-	return u.repo.Add(item)
+	return u.repo.Add(ctx, item)
 }
 
-func (u *stockUseCase) Delete(sku uint32) error {
-	return u.repo.Delete(sku)
+func (u *stockUseCase) Delete(ctx context.Context, sku uint32) error {
+	return u.repo.Delete(ctx, sku)
 }
 
-func (u *stockUseCase) GetBySKU(sku uint32) (models.StockItem, error) {
-	return u.repo.GetBySKU(sku)
+func (u *stockUseCase) GetBySKU(ctx context.Context, sku uint32) (models.StockItem, error) {
+	return u.repo.GetBySKU(ctx, sku)
 }
 
-func (u *stockUseCase) ListByLocation(location string, pageSize, currentPage int64) ([]models.StockItem, error) {
-	return u.repo.ListByLocation(location, pageSize, currentPage)
+func (u *stockUseCase) ListByLocation(ctx context.Context, location string, pageSize, currentPage int64) ([]models.StockItem, error) {
+	return u.repo.ListByLocation(ctx, location, pageSize, currentPage)
 }

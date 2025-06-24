@@ -26,15 +26,15 @@ func (u *cartUseCase) Add(ctx context.Context, item models.CartItem) error {
 		return errors.ErrInvalidSKU
 	}
 
-	return u.repo.Add(item)
+	return u.repo.Add(ctx, item)
 }
 
-func (u *cartUseCase) Delete(userID int64, sku uint32) error {
-	return u.repo.Delete(userID, sku)
+func (u *cartUseCase) Delete(ctx context.Context, userID int64, sku uint32) error {
+	return u.repo.Delete(ctx, userID, sku)
 }
 
 func (u *cartUseCase) List(ctx context.Context, userID int64) ([]models.CartItem, error) {
-	items, err := u.repo.List(userID)
+	items, err := u.repo.List(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +51,6 @@ func (u *cartUseCase) List(ctx context.Context, userID int64) ([]models.CartItem
 	return items, nil
 }
 
-func (u *cartUseCase) Clear(userID int64) error {
-	return u.repo.Clear(userID)
+func (u *cartUseCase) Clear(ctx context.Context, userID int64) error {
+	return u.repo.Clear(ctx, userID)
 }

@@ -17,7 +17,7 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.usecase.Delete(req.SKU); err != nil {
+	if err := h.usecase.Delete(r.Context(), req.SKU); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -21,7 +21,7 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 
 	item := dto.ToModel()
 
-	if err := h.usecase.Add(item); err != nil {
+	if err := h.usecase.Add(r.Context(), item); err != nil {
 		if stdErrors.Is(err, errors.ErrInvalidSKU) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

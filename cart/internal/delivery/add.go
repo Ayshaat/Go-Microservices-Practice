@@ -30,12 +30,14 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid SKU — not registered", http.StatusBadRequest)
 			return
 		}
+
 		if stdErrors.Is(err, errors.ErrCartItemExists) {
 			http.Error(w, "Item already exists in cart", http.StatusConflict)
 			return
 		}
 
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+
 		return
 	}
 

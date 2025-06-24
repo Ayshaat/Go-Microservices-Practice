@@ -19,7 +19,7 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.usecase.Delete(req.UserID, req.SKU); err != nil {
+	if err := h.usecase.Delete(r.Context(), req.UserID, req.SKU); err != nil {
 		if stdErrors.Is(err, errors.ErrCartItemNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return

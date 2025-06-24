@@ -1,8 +1,10 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	stdErrors "errors"
+	"log"
 	"stocks/internal/errors"
 	"stocks/internal/models"
 )
@@ -15,51 +17,58 @@ func NewPostgresStockRepo(db *sql.DB) *PostgresStockRepo {
 	return &PostgresStockRepo{db: db}
 }
 
-func (r *PostgresStockRepo) getSKUInfo(sku uint32) (string, string, error) {
-	var name, itemType string
-
-	err := r.db.QueryRow("SELECT name, type FROM sku_info WHERE sku = $1", sku).Scan(&name, &itemType)
-	if stdErrors.Is(err, sql.ErrNoRows) {
-		return "", "", errors.ErrInvalidSKU
-	}
-
+func WithTransaction(ctx context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return "", "", err
+		return err
 	}
 
-	return name, itemType, nil
+	defer func() {
+		if err := tx.Rollback(); err != nil && !stdErrors.Is(err, sql.ErrTxDone) {
+			log.Printf("tx rollback error: %v", err)
+		}
+	}()
+
+	if err := fn(tx); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
-func (r *PostgresStockRepo) Add(item models.StockItem) error {
-	name, itemType, err := r.getSKUInfo(item.SKU)
-	if err != nil {
-		return err
-	}
-
-	item.Name = name
-	item.Type = itemType
-
+func (r *PostgresStockRepo) itemExists(ctx context.Context, tx *sql.Tx, sku uint32) (bool, error) {
 	var exists bool
+	err := tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM stock_items WHERE sku = $1)", sku).Scan(&exists)
 
-	err = r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM stock_items WHERE sku = $1)", item.SKU).Scan(&exists)
-	if err != nil {
-		return err
-	}
+	return exists, err
+}
 
-	if exists {
-		return errors.ErrItemExists
-	}
-
-	_, err = r.db.Exec(`
-		INSERT INTO stock_items (user_id, sku, name, type, price, count, location)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, item.UserID, item.SKU, item.Name, item.Type, item.Price, item.Count, item.Location)
+func (r *PostgresStockRepo) insertStockItem(ctx context.Context, tx *sql.Tx, item models.StockItem) error {
+	_, err := tx.ExecContext(ctx, `
+		INSERT INTO stock_items (user_id, sku, price, count, location)
+		VALUES ($1, $2, $3, $4, $5)
+	`, item.UserID, item.SKU, item.Price, item.Count, item.Location)
 
 	return err
 }
 
-func (r *PostgresStockRepo) Delete(sku uint32) error {
-	res, err := r.db.Exec("DELETE FROM stock_items WHERE sku = $1", sku)
+func (r *PostgresStockRepo) Add(ctx context.Context, item models.StockItem) error {
+	return WithTransaction(ctx, r.db, func(tx *sql.Tx) error {
+		exists, err := r.itemExists(ctx, tx, item.SKU)
+		if err != nil {
+			return err
+		}
+
+		if exists {
+			return errors.ErrItemExists
+		}
+
+		return r.insertStockItem(ctx, tx, item)
+	})
+}
+
+func (r *PostgresStockRepo) Delete(ctx context.Context, sku uint32) error {
+	res, err := r.db.ExecContext(ctx, "DELETE FROM stock_items WHERE sku = $1", sku)
 	if err != nil {
 		return err
 	}
@@ -76,9 +85,9 @@ func (r *PostgresStockRepo) Delete(sku uint32) error {
 	return nil
 }
 
-func (r *PostgresStockRepo) GetBySKU(sku uint32) (models.StockItem, error) {
+func (r *PostgresStockRepo) GetBySKU(ctx context.Context, sku uint32) (models.StockItem, error) {
 	var item models.StockItem
-	err := r.db.QueryRow(`
+	err := r.db.QueryRowContext(ctx, `
 		SELECT s.user_id, s.sku, i.name, i.type, s.price, s.count, s.location 
 		FROM stock_items s
 		JOIN sku_info i ON s.sku = i.sku
@@ -92,10 +101,11 @@ func (r *PostgresStockRepo) GetBySKU(sku uint32) (models.StockItem, error) {
 	return item, err
 }
 
-func (r *PostgresStockRepo) GetSKUInfo(sku uint32) (string, string, error) {
+func (r *PostgresStockRepo) GetSKUInfo(ctx context.Context, sku uint32) (string, string, error) {
 	var name, typ string
-	err := r.db.QueryRow(
-		`SELECT name, type FROM sku_info WHERE sku = $1`, sku,
+	err := r.db.QueryRowContext(ctx,
+		`SELECT name, type FROM sku_info WHERE sku = $1`,
+		sku,
 	).Scan(&name, &typ)
 
 	if stdErrors.Is(err, sql.ErrNoRows) {
@@ -105,9 +115,9 @@ func (r *PostgresStockRepo) GetSKUInfo(sku uint32) (string, string, error) {
 	return name, typ, err
 }
 
-func (r *PostgresStockRepo) ListByLocation(location string, pageSize, currentPage int64) ([]models.StockItem, error) {
+func (r *PostgresStockRepo) ListByLocation(ctx context.Context, location string, pageSize, currentPage int64) ([]models.StockItem, error) {
 	offset := (currentPage - 1) * pageSize
-	rows, err := r.db.Query(`
+	rows, err := r.db.QueryContext(ctx, `
 		SELECT s.user_id, s.sku, i.name, i.type, s.price, s.count, s.location 
 		FROM stock_items s
 		JOIN sku_info i ON s.sku = i.sku

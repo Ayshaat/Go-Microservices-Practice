@@ -21,7 +21,7 @@ func (h *Handler) ClearCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.usecase.Clear(req.UserID); err != nil {
+	if err := h.usecase.Clear(r.Context(), req.UserID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

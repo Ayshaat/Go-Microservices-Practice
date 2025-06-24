@@ -21,7 +21,7 @@ func (h *Handler) GetItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.usecase.GetBySKU(req.SKU)
+	item, err := h.usecase.GetBySKU(r.Context(), req.SKU)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
