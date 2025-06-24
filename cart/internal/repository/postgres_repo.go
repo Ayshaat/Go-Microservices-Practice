@@ -4,6 +4,7 @@ import (
 	"cart/internal/errors"
 	"cart/internal/models"
 	"database/sql"
+	stdErrors "errors"
 )
 
 type PostgresCartRepo struct {
@@ -17,7 +18,7 @@ func NewPostgresCartRepo(db *sql.DB) *PostgresCartRepo {
 func (r *PostgresCartRepo) GetSKUInfo(sku uint32) (string, string, error) {
 	var name, typ string
 	err := r.db.QueryRow("SELECT name, type FROM sku_info WHERE sku = $1", sku).Scan(&name, &typ)
-	if err == sql.ErrNoRows {
+	if stdErrors.Is(err, sql.ErrNoRows) {
 		return "", "", errors.ErrInvalidSKU
 	}
 	if err != nil {

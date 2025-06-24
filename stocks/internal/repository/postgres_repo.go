@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	stdErrors "errors"
 	"stocks/internal/errors"
 	"stocks/internal/models"
 )
@@ -18,7 +19,7 @@ func (r *PostgresStockRepo) getSKUInfo(sku uint32) (string, string, error) {
 	var name, itemType string
 
 	err := r.db.QueryRow("SELECT name, type FROM sku_info WHERE sku = $1", sku).Scan(&name, &itemType)
-	if err == sql.ErrNoRows {
+	if stdErrors.Is(err, sql.ErrNoRows) {
 		return "", "", errors.ErrInvalidSKU
 	}
 
@@ -84,7 +85,7 @@ func (r *PostgresStockRepo) GetBySKU(sku uint32) (models.StockItem, error) {
 		WHERE s.sku = $1
 	`, sku).Scan(&item.UserID, &item.SKU, &item.Name, &item.Type, &item.Price, &item.Count, &item.Location)
 
-	if err == sql.ErrNoRows {
+	if stdErrors.Is(err, sql.ErrNoRows) {
 		return models.StockItem{}, errors.ErrItemNotFound
 	}
 
@@ -97,7 +98,7 @@ func (r *PostgresStockRepo) GetSKUInfo(sku uint32) (string, string, error) {
 		`SELECT name, type FROM sku_info WHERE sku = $1`, sku,
 	).Scan(&name, &typ)
 
-	if err == sql.ErrNoRows {
+	if stdErrors.Is(err, sql.ErrNoRows) {
 		return "", "", errors.ErrItemNotFound
 	}
 

@@ -3,11 +3,9 @@ package delivery
 import "cart/internal/models"
 
 type CartItemDTO struct {
-	UserID int64   `json:"user_id"`
-	SKU    uint32  `json:"sku"`
-	Count  int16   `json:"count"`
-	Price  float64 `json:"price"`
-	Stock  int16   `json:"stock"`
+	UserID int64  `json:"user_id"`
+	SKU    uint32 `json:"sku"`
+	Count  int16  `json:"count"`
 }
 
 func (dto CartItemDTO) ToModel() models.CartItem {
@@ -15,8 +13,6 @@ func (dto CartItemDTO) ToModel() models.CartItem {
 		UserID: dto.UserID,
 		SKU:    dto.SKU,
 		Count:  dto.Count,
-		Price:  dto.Price,
-		Stock:  dto.Stock,
 	}
 }
 
