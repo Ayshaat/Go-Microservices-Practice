@@ -26,6 +26,8 @@ func (h *Handler) AddItem(w http.ResponseWriter, r *http.Request) {
 
 	err := h.usecase.Add(r.Context(), item)
 	if err != nil {
+		log.Printf("AddItem error: %v", err)
+
 		if stdErrors.Is(err, errors.ErrInvalidSKU) {
 			http.Error(w, "Invalid SKU — not registered", http.StatusBadRequest)
 			return

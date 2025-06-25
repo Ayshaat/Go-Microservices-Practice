@@ -10,4 +10,5 @@ type CartRepository interface {
 	Delete(ctx context.Context, userID int64, sku uint32) error
 	List(ctx context.Context, userID int64) ([]models.CartItem, error)
 	Clear(ctx context.Context, userID int64) error
+	Exists(ctx context.Context, userID int64, sku uint32) (bool, error)
 }

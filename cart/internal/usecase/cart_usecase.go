@@ -21,9 +21,22 @@ func NewCartUsecase(repo repository.CartRepository, stockRepo stockclient.StockR
 }
 
 func (u *cartUseCase) Add(ctx context.Context, item models.CartItem) error {
-	_, err := u.stockRepo.GetBySKU(ctx, item.SKU)
+	stockItem, err := u.stockRepo.GetBySKU(ctx, item.SKU)
 	if err != nil {
 		return errors.ErrInvalidSKU
+	}
+
+	if item.Count > stockItem.Count {
+		return errors.ErrNotEnoughStock
+	}
+
+	exists, err := u.repo.Exists(ctx, item.UserID, item.SKU)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return errors.ErrCartItemExists
 	}
 
 	return u.repo.Add(ctx, item)

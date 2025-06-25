@@ -4,47 +4,32 @@ import (
 	"context"
 	"database/sql"
 	stdErrors "errors"
-	"log"
 	"stocks/internal/errors"
 	"stocks/internal/models"
+
+	"github.com/jmoiron/sqlx"
+
+	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sql/v2"
 )
 
 type PostgresStockRepo struct {
-	db *sql.DB
+	db     *sqlx.DB
+	getter *trmsqlx.CtxGetter
 }
 
-func NewPostgresStockRepo(db *sql.DB) *PostgresStockRepo {
-	return &PostgresStockRepo{db: db}
+func NewPostgresStockRepo(db *sqlx.DB, getter *trmsqlx.CtxGetter) *PostgresStockRepo {
+	return &PostgresStockRepo{db: db, getter: getter}
 }
 
-func WithTransaction(ctx context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err := tx.Rollback(); err != nil && !stdErrors.Is(err, sql.ErrTxDone) {
-			log.Printf("tx rollback error: %v", err)
-		}
-	}()
-
-	if err := fn(tx); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-func (r *PostgresStockRepo) itemExists(ctx context.Context, tx *sql.Tx, sku uint32) (bool, error) {
+func (r *PostgresStockRepo) itemExists(ctx context.Context, sku uint32) (bool, error) {
 	var exists bool
-	err := tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM stock_items WHERE sku = $1)", sku).Scan(&exists)
+	err := r.getter.DefaultTrOrDB(ctx, r.db).QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM stock_items WHERE sku = $1)", sku).Scan(&exists)
 
 	return exists, err
 }
 
-func (r *PostgresStockRepo) insertStockItem(ctx context.Context, tx *sql.Tx, item models.StockItem) error {
-	_, err := tx.ExecContext(ctx, `
+func (r *PostgresStockRepo) insertStockItem(ctx context.Context, item models.StockItem) error {
+	_, err := r.getter.DefaultTrOrDB(ctx, r.db).ExecContext(ctx, `
 		INSERT INTO stock_items (user_id, sku, price, count, location)
 		VALUES ($1, $2, $3, $4, $5)
 	`, item.UserID, item.SKU, item.Price, item.Count, item.Location)
@@ -53,18 +38,16 @@ func (r *PostgresStockRepo) insertStockItem(ctx context.Context, tx *sql.Tx, ite
 }
 
 func (r *PostgresStockRepo) Add(ctx context.Context, item models.StockItem) error {
-	return WithTransaction(ctx, r.db, func(tx *sql.Tx) error {
-		exists, err := r.itemExists(ctx, tx, item.SKU)
-		if err != nil {
-			return err
-		}
+	exists, err := r.itemExists(ctx, item.SKU)
+	if err != nil {
+		return err
+	}
 
-		if exists {
-			return errors.ErrItemExists
-		}
+	if exists {
+		return errors.ErrItemExists
+	}
 
-		return r.insertStockItem(ctx, tx, item)
-	})
+	return r.insertStockItem(ctx, item)
 }
 
 func (r *PostgresStockRepo) Delete(ctx context.Context, sku uint32) error {

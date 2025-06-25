@@ -41,6 +41,17 @@ func (r *PostgresCartRepo) Add(ctx context.Context, item models.CartItem) error 
 	return nil
 }
 
+func (r *PostgresCartRepo) Exists(ctx context.Context, userID int64, sku uint32) (bool, error) {
+	var count int
+
+	err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM cart_items WHERE user_id = $1 AND sku = $2`, userID, sku).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
 func (r *PostgresCartRepo) Delete(ctx context.Context, userID int64, sku uint32) error {
 	res, err := r.db.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1 AND sku = $2`, userID, sku)
 	if err != nil {

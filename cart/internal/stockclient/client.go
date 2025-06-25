@@ -70,6 +70,10 @@ func (c *httpStockClient) GetBySKU(ctx context.Context, sku uint32) (models.Stoc
 
 	defer resp.Body.Close()
 
+	return decodeSKUResponse(resp)
+}
+
+func decodeSKUResponse(resp *http.Response) (models.StockItem, error) {
 	switch resp.StatusCode {
 	case http.StatusOK:
 		var item models.StockItem
