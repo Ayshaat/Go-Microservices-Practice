@@ -21,14 +21,15 @@ func NewPostgresStockRepo(db *sqlx.DB, getter *trmsqlx.CtxGetter) *PostgresStock
 	return &PostgresStockRepo{db: db, getter: getter}
 }
 
-func (r *PostgresStockRepo) itemExists(ctx context.Context, sku uint32) (bool, error) {
+func (r *PostgresStockRepo) ItemExists(ctx context.Context, sku uint32) (bool, error) {
 	var exists bool
-	err := r.getter.DefaultTrOrDB(ctx, r.db).QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM stock_items WHERE sku = $1)", sku).Scan(&exists)
+	err := r.getter.DefaultTrOrDB(ctx, r.db).
+		QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM stock_items WHERE sku = $1)", sku).Scan(&exists)
 
 	return exists, err
 }
 
-func (r *PostgresStockRepo) insertStockItem(ctx context.Context, item models.StockItem) error {
+func (r *PostgresStockRepo) InsertStockItem(ctx context.Context, item models.StockItem) error {
 	_, err := r.getter.DefaultTrOrDB(ctx, r.db).ExecContext(ctx, `
 		INSERT INTO stock_items (user_id, sku, price, count, location)
 		VALUES ($1, $2, $3, $4, $5)
@@ -37,21 +38,32 @@ func (r *PostgresStockRepo) insertStockItem(ctx context.Context, item models.Sto
 	return err
 }
 
-func (r *PostgresStockRepo) Add(ctx context.Context, item models.StockItem) error {
-	exists, err := r.itemExists(ctx, item.SKU)
-	if err != nil {
-		return err
+func (r *PostgresStockRepo) GetByUserSKU(ctx context.Context, userID int64, sku uint32) (models.StockItem, error) {
+	var item models.StockItem
+	err := r.getter.DefaultTrOrDB(ctx, r.db).QueryRowContext(ctx, `
+        SELECT user_id, sku, price, count, location 
+        FROM stock_items
+        WHERE user_id = $1 AND sku = $2
+    `, userID, sku).Scan(&item.UserID, &item.SKU, &item.Price, &item.Count, &item.Location)
+
+	if stdErrors.Is(err, sql.ErrNoRows) {
+		return models.StockItem{}, errors.ErrItemNotFound
 	}
 
-	if exists {
-		return errors.ErrItemExists
-	}
+	return item, err
+}
 
-	return r.insertStockItem(ctx, item)
+func (r *PostgresStockRepo) UpdateCount(ctx context.Context, userID int64, sku uint32, newCount uint16) error {
+	_, err := r.getter.DefaultTrOrDB(ctx, r.db).ExecContext(ctx, `
+        UPDATE stock_items SET count = $1
+        WHERE user_id = $2 AND sku = $3
+    `, newCount, userID, sku)
+
+	return err
 }
 
 func (r *PostgresStockRepo) Delete(ctx context.Context, sku uint32) error {
-	res, err := r.db.ExecContext(ctx, "DELETE FROM stock_items WHERE sku = $1", sku)
+	res, err := r.getter.DefaultTrOrDB(ctx, r.db).ExecContext(ctx, "DELETE FROM stock_items WHERE sku = $1", sku)
 	if err != nil {
 		return err
 	}
@@ -70,7 +82,7 @@ func (r *PostgresStockRepo) Delete(ctx context.Context, sku uint32) error {
 
 func (r *PostgresStockRepo) GetBySKU(ctx context.Context, sku uint32) (models.StockItem, error) {
 	var item models.StockItem
-	err := r.db.QueryRowContext(ctx, `
+	err := r.getter.DefaultTrOrDB(ctx, r.db).QueryRowContext(ctx, `
 		SELECT s.user_id, s.sku, i.name, i.type, s.price, s.count, s.location 
 		FROM stock_items s
 		JOIN sku_info i ON s.sku = i.sku
@@ -86,7 +98,7 @@ func (r *PostgresStockRepo) GetBySKU(ctx context.Context, sku uint32) (models.St
 
 func (r *PostgresStockRepo) GetSKUInfo(ctx context.Context, sku uint32) (string, string, error) {
 	var name, typ string
-	err := r.db.QueryRowContext(ctx,
+	err := r.getter.DefaultTrOrDB(ctx, r.db).QueryRowContext(ctx,
 		`SELECT name, type FROM sku_info WHERE sku = $1`,
 		sku,
 	).Scan(&name, &typ)
@@ -100,7 +112,7 @@ func (r *PostgresStockRepo) GetSKUInfo(ctx context.Context, sku uint32) (string,
 
 func (r *PostgresStockRepo) ListByLocation(ctx context.Context, location string, pageSize, currentPage int64) ([]models.StockItem, error) {
 	offset := (currentPage - 1) * pageSize
-	rows, err := r.db.QueryContext(ctx, `
+	rows, err := r.getter.DefaultTrOrDB(ctx, r.db).QueryContext(ctx, `
 		SELECT s.user_id, s.sku, i.name, i.type, s.price, s.count, s.location 
 		FROM stock_items s
 		JOIN sku_info i ON s.sku = i.sku

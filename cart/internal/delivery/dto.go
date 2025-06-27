@@ -3,7 +3,7 @@ package delivery
 import "cart/internal/models"
 
 type CartItemDTO struct {
-	UserID int64  `json:"user_id"`
+	UserID int64  `json:"userId"`
 	SKU    uint32 `json:"sku"`
 	Count  int16  `json:"count"`
 }

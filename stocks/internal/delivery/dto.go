@@ -3,7 +3,7 @@ package delivery
 import "stocks/internal/models"
 
 type StockItemDTO struct {
-	UserID   int64   `json:"user_id"`
+	UserID   int64   `json:"userId"`
 	SKU      uint32  `json:"sku"`
 	Price    float64 `json:"price"`
 	Count    uint16  `json:"count"`

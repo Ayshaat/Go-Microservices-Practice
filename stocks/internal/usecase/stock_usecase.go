@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	stdErrors "errors"
 	"stocks/internal/errors"
 	"stocks/internal/models"
 	"stocks/internal/repository"
@@ -28,7 +29,22 @@ func (u *stockUseCase) Add(ctx context.Context, item models.StockItem) error {
 			return errors.ErrInvalidSKU
 		}
 
-		return u.repo.Add(ctx, item)
+		existingItem, err := u.repo.GetByUserSKU(ctx, item.UserID, item.SKU)
+		if err != nil {
+			if !stdErrors.Is(err, errors.ErrItemNotFound) {
+				return err
+			}
+
+			return u.repo.InsertStockItem(ctx, item)
+		}
+
+		if existingItem.UserID != item.UserID {
+			return errors.ErrOwnershipViolation
+		}
+
+		existingItem.Count += item.Count
+
+		return u.repo.UpdateCount(ctx, existingItem.UserID, existingItem.SKU, existingItem.Count)
 	})
 }
 
