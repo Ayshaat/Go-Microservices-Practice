@@ -41,15 +41,17 @@ func (r *PostgresCartRepo) Add(ctx context.Context, item models.CartItem) error 
 	return nil
 }
 
-func (r *PostgresCartRepo) Exists(ctx context.Context, userID int64, sku uint32) (bool, error) {
-	var count int
+func (r *PostgresCartRepo) Upsert(ctx context.Context, item models.CartItem) error {
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO cart_items (user_id, sku, count, price)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (user_id, sku)
+		DO UPDATE SET 
+			count = cart_items.count + EXCLUDED.count,
+			price = EXCLUDED.price;
+	`, item.UserID, item.SKU, item.Count, item.Price)
 
-	err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM cart_items WHERE user_id = $1 AND sku = $2`, userID, sku).Scan(&count)
-	if err != nil {
-		return false, err
-	}
-
-	return count > 0, nil
+	return err
 }
 
 func (r *PostgresCartRepo) Delete(ctx context.Context, userID int64, sku uint32) error {

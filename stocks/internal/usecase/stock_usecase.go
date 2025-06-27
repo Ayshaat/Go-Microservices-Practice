@@ -6,15 +6,15 @@ import (
 	"stocks/internal/models"
 	"stocks/internal/repository"
 
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
+	"github.com/avito-tech/go-transaction-manager/trm/v2"
 )
 
 type stockUseCase struct {
 	repo      repository.StockRepository
-	txManager *manager.Manager
+	txManager trm.Manager
 }
 
-func NewStockUsecase(repo repository.StockRepository, txManager *manager.Manager) StockUseCase {
+func NewStockUsecase(repo repository.StockRepository, txManager trm.Manager) StockUseCase {
 	return &stockUseCase{
 		repo:      repo,
 		txManager: txManager,

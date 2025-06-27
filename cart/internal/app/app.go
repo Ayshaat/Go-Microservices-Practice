@@ -8,6 +8,7 @@ import (
 	"cart/internal/stockclient"
 	"cart/internal/usecase"
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -20,12 +21,12 @@ import (
 func Run() error {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
 	database, err := db.ConnectDB(cfg.PostgresConnStr())
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer database.Close()
 
@@ -33,7 +34,7 @@ func Run() error {
 
 	stockClient, err := stockclient.New(os.Getenv("STOCK_SERVICE_URL"))
 	if err != nil {
-		log.Fatalf("failed to create stock client: %v", err)
+		return fmt.Errorf("failed to create stock client: %w", err)
 	}
 	cartUseCase := usecase.NewCartUsecase(cartRepo, stockClient)
 	handler := delivery.NewHandler(cartUseCase)
@@ -73,7 +74,7 @@ func Run() error {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server Shutdown Failed: %v", err)
+		return fmt.Errorf("server shutdown failed: %w", err)
 	}
 
 	log.Println("Server gracefully stopped")

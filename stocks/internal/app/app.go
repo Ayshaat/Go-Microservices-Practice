@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -25,12 +26,12 @@ import (
 func Run() error {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
 	database, err := db.ConnectDB(cfg.PostgresConnStr())
 	if err != nil {
-		log.Fatalf("failed to connect and migrate db: %v", err)
+		return fmt.Errorf("failed to connect and migrate db: %w", err)
 	}
 	defer database.Close()
 
@@ -81,7 +82,7 @@ func Run() error {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Stocks Server Shutdown Failed: %v", err)
+		return fmt.Errorf("stocks server shutdown failed: %w", err)
 	}
 
 	log.Println("Stocks server gracefully stopped")

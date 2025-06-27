@@ -30,16 +30,7 @@ func (u *cartUseCase) Add(ctx context.Context, item models.CartItem) error {
 		return errors.ErrNotEnoughStock
 	}
 
-	exists, err := u.repo.Exists(ctx, item.UserID, item.SKU)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		return errors.ErrCartItemExists
-	}
-
-	return u.repo.Add(ctx, item)
+	return u.repo.Upsert(ctx, item)
 }
 
 func (u *cartUseCase) Delete(ctx context.Context, userID int64, sku uint32) error {
