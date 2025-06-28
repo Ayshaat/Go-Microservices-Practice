@@ -31,7 +31,7 @@ run:
 
 lint:
 	@echo "Running golangci-lint…"
-	# Point at each module directory, or simply `./…` if you want everything
+# Point at each module directory, or simply `./…` if you want everything
 	golangci-lint run ./cart/... ./stocks/...
 
 

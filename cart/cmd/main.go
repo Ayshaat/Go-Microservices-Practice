@@ -1,7 +1,12 @@
 package main
 
-import "log"
+import (
+	"cart/internal/app"
+	"log"
+)
 
 func main() {
-	log.Println("Starting cart server")
+	if err := app.Run(); err != nil {
+		log.Fatalf("app failed: %v", err)
+	}
 }

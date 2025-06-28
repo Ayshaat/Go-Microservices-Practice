@@ -1,7 +1,12 @@
 package main
 
-import "log"
+import (
+	"log"
+	"stocks/internal/app"
+)
 
 func main() {
-	log.Println("Starting stocks server")
+	if err := app.Run(); err != nil {
+		log.Fatalf("stocks app failed: %v", err)
+	}
 }
