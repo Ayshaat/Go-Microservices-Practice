@@ -43,13 +43,12 @@ func (r *PostgresCartRepo) Add(ctx context.Context, item models.CartItem) error 
 
 func (r *PostgresCartRepo) Upsert(ctx context.Context, item models.CartItem) error {
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO cart_items (user_id, sku, count, price)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO cart_items (user_id, sku, count)
+		VALUES ($1, $2, $3)
 		ON CONFLICT (user_id, sku)
 		DO UPDATE SET 
-			count = cart_items.count + EXCLUDED.count,
-			price = EXCLUDED.price;
-	`, item.UserID, item.SKU, item.Count, item.Price)
+			count = cart_items.count + EXCLUDED.count
+	`, item.UserID, item.SKU, item.Count)
 
 	return err
 }

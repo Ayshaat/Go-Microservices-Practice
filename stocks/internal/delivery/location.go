@@ -7,7 +7,6 @@ import (
 )
 
 type listLocationRequest struct {
-	UserID      int64  `json:"userID"`
 	Location    string `json:"location"`
 	PageSize    int64  `json:"pageSize"`
 	CurrentPage int64  `json:"currentPage"`
