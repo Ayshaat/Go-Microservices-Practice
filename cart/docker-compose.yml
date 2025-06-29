@@ -1,0 +1,31 @@
+
+services:
+  cart:
+    image: ayshaat/cart:hw7
+    container_name: cart-service
+    ports:
+      - "8090:8090"
+    env_file:
+      - .env.docker
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
+    container_name: cart-db
+    restart: always
+    environment:
+      POSTGRES_DB: cart
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: lavender@30.06.04
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    external: true
+    name: my-global-shared-network
