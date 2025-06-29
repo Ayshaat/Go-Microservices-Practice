@@ -2,7 +2,6 @@ version: "3.8"
 
 services:
   stocks:
-    build: .
     image: ayshaat/stocks:hw7
     container_name: stock-service
     ports:
