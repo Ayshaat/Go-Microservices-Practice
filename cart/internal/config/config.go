@@ -9,30 +9,43 @@ import (
 )
 
 type Config struct {
-	DBHost       string
-	DBPort       string
-	DBUser       string
-	DBPassword   string
-	DBName       string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	DBHost          string
+	DBPort          string
+	DBUser          string
+	DBPassword      string
+	DBName          string
+	StockServiceURL string
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
 }
 
 func Load() (*Config, error) {
-	if err := godotenv.Load(".env.local"); err != nil {
-		return nil, fmt.Errorf("error loading .env file: %w", err)
+	_, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
+	if err := godotenv.Load(".env.local"); err != nil {
+		if err2 := godotenv.Load("../.env.local"); err2 != nil {
+			if err3 := godotenv.Load("../../.env.local"); err3 != nil {
+				return nil, fmt.Errorf("error loading .env file: %w", err)
+			}
+		}
+	}
+
+	fmt.Println("Loaded .env.local successfully")
+
 	cfg := &Config{
-		DBHost:       os.Getenv("DB_HOST"),
-		DBPort:       os.Getenv("DB_PORT"),
-		DBUser:       os.Getenv("DB_USER"),
-		DBPassword:   os.Getenv("DB_PASSWORD"),
-		DBName:       os.Getenv("DB_NAME"),
-		ReadTimeout:  ReadTimeout,
-		WriteTimeout: WriteTimeout,
-		IdleTimeout:  IdleTimeout,
+		DBHost:          os.Getenv("DB_HOST"),
+		DBPort:          os.Getenv("DB_PORT"),
+		DBUser:          os.Getenv("DB_USER"),
+		DBPassword:      os.Getenv("DB_PASSWORD"),
+		DBName:          os.Getenv("DB_NAME"),
+		StockServiceURL: os.Getenv("STOCK_SERVICE_URL"),
+		ReadTimeout:     ReadTimeout,
+		WriteTimeout:    WriteTimeout,
+		IdleTimeout:     IdleTimeout,
 	}
 
 	if cfg.DBHost == "" || cfg.DBUser == "" || cfg.DBName == "" {

@@ -2,12 +2,14 @@ package db
 
 import (
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"log"
-	"os"
 
 	_ "github.com/lib/pq"
 )
+
+var migrations string
 
 func ConnectDB(connStr string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", connStr)
@@ -19,20 +21,15 @@ func ConnectDB(connStr string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping db: %w", err)
 	}
 
-	if err := runMigrations(db); err != nil {
+	if err := RunMigrations(db); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
 	return db, nil
 }
 
-func runMigrations(db *sql.DB) error {
-	sqlBytes, err := os.ReadFile("internal/db/migrations.sql")
-	if err != nil {
-		return fmt.Errorf("failed to read migrations file: %w", err)
-	}
-
-	_, err = db.Exec(string(sqlBytes))
+func RunMigrations(db *sql.DB) error {
+	_, err := db.Exec(migrations)
 	if err != nil {
 		return fmt.Errorf("failed to execute migrations: %w", err)
 	}

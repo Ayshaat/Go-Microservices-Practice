@@ -6,11 +6,11 @@ import (
 	"net/http"
 )
 
-type listRequest struct {
+type ListRequest struct {
 	UserID int64 `json:"userID"`
 }
 
-type listResponse struct {
+type ListResponse struct {
 	Items []models.CartItem `json:"items"`
 }
 
@@ -20,9 +20,14 @@ func (h *Handler) ListItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req listRequest
+	var req ListRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.UserID == 0 {
+		http.Error(w, "userID is required", http.StatusBadRequest)
 		return
 	}
 
@@ -36,7 +41,7 @@ func (h *Handler) ListItems(w http.ResponseWriter, r *http.Request) {
 		items = []models.CartItem{}
 	}
 
-	res := listResponse{
+	res := ListResponse{
 		Items: items,
 	}
 

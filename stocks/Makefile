@@ -1,8 +1,10 @@
 APP_NAME := stocks
 BIN_DIR := bin
 PORT := 8081
+DOCKER_IMAGE := ayshaat/stocks:hw7
+COMPOSE_FILE := docker-compose.test.yml
 
-.PHONY: build run test clean
+.PHONY: build run test clean start-test-env stop-test-env test-integration unit-test docker-build docker-push
 
 build:
 	@echo "Building $(APP_NAME)..."
@@ -14,10 +16,37 @@ run: build
 	@./$(BIN_DIR)/$(APP_NAME) -port $(PORT)
 
 test:
-	@echo "Testing $(APP_NAME)..."
+	@echo "Running all tests..."
 	@go test -v ./...
+
+	unit-test:
+	@echo "Running unit tests only..."
+	@go test -v -tags=unit ./...
+
+start-test-env:
+	@echo "Starting test environment..."
+	docker-compose -f $(COMPOSE_FILE) up -d --build
+
+stop-test-env:
+	@echo "Stopping test environment..."
+	docker-compose -f $(COMPOSE_FILE) down
+
+test-integration: start-test-env
+	@echo "Waiting for services to be healthy..."
+	@sleep 10
+	@echo "Running integration tests..."
+	@go test -v -tags=integration ./internal/delivery
+	$(MAKE) stop-test-env
 
 clean:
 	@echo "Cleaning $(APP_NAME)..."
 	@rm -rf $(BIN_DIR)
 	@go clean
+
+docker-build:
+	@echo "Building Docker image $(DOCKER_IMAGE)..."
+	docker build -t $(DOCKER_IMAGE) .
+
+docker-push:
+	@echo "Pushing Docker image $(DOCKER_IMAGE)..."
+	docker push $(DOCKER_IMAGE)

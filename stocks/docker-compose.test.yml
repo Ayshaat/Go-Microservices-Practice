@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: testdb
+    ports:
+      - "5433:5432" 
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "testuser"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  stocks:
+    environment:
+      - POSTGRES_DSN=postgres://testuser:testpass@postgres:5432/testdb?sslmode=disable
+      - PORT=8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"

@@ -21,7 +21,11 @@ type Config struct {
 
 func Load() (*Config, error) {
 	if err := godotenv.Load(".env.local"); err != nil {
-		return nil, fmt.Errorf("error loading .env file: %w", err)
+		if err2 := godotenv.Load("../.env.local"); err2 != nil {
+			if err3 := godotenv.Load("../../.env.local"); err3 != nil {
+				return nil, fmt.Errorf("error loading .env file: %w", err)
+			}
+		}
 	}
 
 	cfg := &Config{

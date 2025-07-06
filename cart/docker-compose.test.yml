@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: cart-db-test
+    restart: always
+    environment:
+      POSTGRES_DB: cart
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: lavender@30.06.04
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cart"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  stock:
+    image: ayshaat/stock:hw7
+    container_name: stock-service-test
+    ports:
+      - "8081:8080"
+    env_file:
+      - .env.docker
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  cart:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cart-service-test
+    ports:
+      - "8090:8090"
+    env_file:
+      - .env.docker
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+      - stock
+
+networks:
+  app-network:
+    external: true
+    name: my-global-shared-network
