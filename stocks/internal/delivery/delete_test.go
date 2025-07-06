@@ -14,6 +14,8 @@ import (
 )
 
 func TestHandler_DeleteItem(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

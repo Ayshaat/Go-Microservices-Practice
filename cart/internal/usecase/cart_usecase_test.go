@@ -13,6 +13,8 @@ import (
 )
 
 func TestCartUseCase_Add(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -29,6 +31,7 @@ func TestCartUseCase_Add(t *testing.T) {
 	}
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 		stockItem := models.StockItem{
 			SKU:   100,
 			Count: 10,
@@ -42,6 +45,7 @@ func TestCartUseCase_Add(t *testing.T) {
 	})
 
 	t.Run("invalid sku error", func(t *testing.T) {
+		t.Parallel()
 		mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(models.StockItem{}, stdErr.New("not found"))
 
 		err := u.Add(ctx, item)
@@ -49,6 +53,7 @@ func TestCartUseCase_Add(t *testing.T) {
 	})
 
 	t.Run("not enough stock error", func(t *testing.T) {
+		t.Parallel()
 		stockItem := models.StockItem{
 			SKU:   100,
 			Count: 1,
@@ -61,6 +66,7 @@ func TestCartUseCase_Add(t *testing.T) {
 	})
 
 	t.Run("repo error on upsert", func(t *testing.T) {
+		t.Parallel()
 		stockItem := models.StockItem{
 			SKU:   100,
 			Count: 10,
@@ -75,6 +81,8 @@ func TestCartUseCase_Add(t *testing.T) {
 }
 
 func TestCartUseCase_Delete(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -88,6 +96,7 @@ func TestCartUseCase_Delete(t *testing.T) {
 	sku := uint32(100)
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 		mockCartRepo.EXPECT().Delete(ctx, userID, sku).Return(nil)
 
 		err := u.Delete(ctx, userID, sku)
@@ -95,6 +104,7 @@ func TestCartUseCase_Delete(t *testing.T) {
 	})
 
 	t.Run("repo error", func(t *testing.T) {
+		t.Parallel()
 		mockCartRepo.EXPECT().Delete(ctx, userID, sku).Return(stdErr.New("db error"))
 
 		err := u.Delete(ctx, userID, sku)
@@ -103,6 +113,8 @@ func TestCartUseCase_Delete(t *testing.T) {
 }
 
 func TestCartUseCase_List(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -132,6 +144,8 @@ func TestCartUseCase_List(t *testing.T) {
 	}
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
 		mockCartRepo.EXPECT().List(ctx, userID).Return(cartItems, nil)
 		mockStockRepo.EXPECT().GetBySKU(ctx, uint32(100)).Return(stockItem1, nil)
 		mockStockRepo.EXPECT().GetBySKU(ctx, uint32(101)).Return(stockItem2, nil)
@@ -146,6 +160,7 @@ func TestCartUseCase_List(t *testing.T) {
 	})
 
 	t.Run("repo list error", func(t *testing.T) {
+		t.Parallel()
 		mockCartRepo.EXPECT().List(ctx, userID).Return(nil, stdErr.New("db error"))
 
 		_, err := u.List(ctx, userID)
@@ -153,6 +168,7 @@ func TestCartUseCase_List(t *testing.T) {
 	})
 
 	t.Run("stock get error", func(t *testing.T) {
+		t.Parallel()
 		mockCartRepo.EXPECT().List(ctx, userID).Return(cartItems, nil)
 		mockStockRepo.EXPECT().GetBySKU(ctx, uint32(100)).Return(models.StockItem{}, stdErr.New("not found"))
 
@@ -162,6 +178,8 @@ func TestCartUseCase_List(t *testing.T) {
 }
 
 func TestCartUseCase_Clear(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -174,6 +192,7 @@ func TestCartUseCase_Clear(t *testing.T) {
 	userID := int64(1)
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 		mockCartRepo.EXPECT().Clear(ctx, userID).Return(nil)
 
 		err := u.Clear(ctx, userID)
@@ -181,6 +200,7 @@ func TestCartUseCase_Clear(t *testing.T) {
 	})
 
 	t.Run("repo error", func(t *testing.T) {
+		t.Parallel()
 		mockCartRepo.EXPECT().Clear(ctx, userID).Return(stdErr.New("db error"))
 
 		err := u.Clear(ctx, userID)

@@ -35,7 +35,7 @@ test-integration: start-test-env
 	@echo "Waiting for services to be healthy..."
 	@sleep 10
 	@echo "Running integration tests..."
-	@go test -v -tags=integration ./internal/delivery
+	@INTEGRATION_TEST=1 go test -v ./tests
 	$(MAKE) stop-test-env
 
 clean:

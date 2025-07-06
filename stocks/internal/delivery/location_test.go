@@ -16,6 +16,8 @@ import (
 )
 
 func TestHandler_ListByLocation(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

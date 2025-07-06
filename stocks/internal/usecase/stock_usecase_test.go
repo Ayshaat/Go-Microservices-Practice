@@ -14,6 +14,8 @@ import (
 )
 
 func TestStockUseCase_Add(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -32,6 +34,8 @@ func TestStockUseCase_Add(t *testing.T) {
 	}
 
 	t.Run("success new insert", func(t *testing.T) {
+		t.Parallel()
+
 		mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
 		mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(models.StockItem{}, errors.ErrItemNotFound)
 		mockRepo.EXPECT().InsertStockItem(ctx, item).Return(nil)
@@ -43,6 +47,8 @@ func TestStockUseCase_Add(t *testing.T) {
 	})
 
 	t.Run("success update existing", func(t *testing.T) {
+		t.Parallel()
+
 		existing := item
 		existing.Count = 3
 
@@ -57,6 +63,8 @@ func TestStockUseCase_Add(t *testing.T) {
 	})
 
 	t.Run("invalid sku error", func(t *testing.T) {
+		t.Parallel()
+
 		mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("", "", stdErr.New("not found"))
 
 		err := uc.Add(ctx, item)
@@ -66,6 +74,8 @@ func TestStockUseCase_Add(t *testing.T) {
 	})
 
 	t.Run("ownership violation error", func(t *testing.T) {
+		t.Parallel()
+
 		existing := item
 		existing.UserID = 999
 
@@ -79,6 +89,8 @@ func TestStockUseCase_Add(t *testing.T) {
 	})
 
 	t.Run("other repo error", func(t *testing.T) {
+		t.Parallel()
+
 		mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
 		mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(models.StockItem{}, stdErr.New("some error"))
 
@@ -90,6 +102,8 @@ func TestStockUseCase_Add(t *testing.T) {
 }
 
 func TestStockUseCase_Delete(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -100,6 +114,8 @@ func TestStockUseCase_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("success delete", func(t *testing.T) {
+		t.Parallel()
+
 		mockRepo.EXPECT().Delete(ctx, uint32(1001)).Return(nil)
 
 		err := uc.Delete(ctx, 1001)
@@ -109,6 +125,8 @@ func TestStockUseCase_Delete(t *testing.T) {
 	})
 
 	t.Run("delete error", func(t *testing.T) {
+		t.Parallel()
+
 		mockRepo.EXPECT().Delete(ctx, uint32(1001)).Return(stdErr.New("delete error"))
 
 		err := uc.Delete(ctx, 1001)
@@ -119,6 +137,8 @@ func TestStockUseCase_Delete(t *testing.T) {
 }
 
 func TestStockUseCase_GetBySKU(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -139,6 +159,8 @@ func TestStockUseCase_GetBySKU(t *testing.T) {
 	}
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
 		mockRepo.EXPECT().GetBySKU(ctx, uint32(1001)).Return(expectedItem, nil)
 
 		item, err := uc.GetBySKU(ctx, 1001)
@@ -152,6 +174,8 @@ func TestStockUseCase_GetBySKU(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
+		t.Parallel()
+
 		mockRepo.EXPECT().GetBySKU(ctx, uint32(1001)).Return(models.StockItem{}, stdErr.New("not found"))
 
 		_, err := uc.GetBySKU(ctx, 1001)
@@ -162,6 +186,8 @@ func TestStockUseCase_GetBySKU(t *testing.T) {
 }
 
 func TestStockUseCase_ListByLocation(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -193,6 +219,8 @@ func TestStockUseCase_ListByLocation(t *testing.T) {
 	}
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
 		mockRepo.EXPECT().ListByLocation(ctx, "loc1", int64(10), int64(1)).Return(expectedItems, nil)
 
 		items, err := uc.ListByLocation(ctx, "loc1", 10, 1)
@@ -206,6 +234,8 @@ func TestStockUseCase_ListByLocation(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
+		t.Parallel()
+
 		mockRepo.EXPECT().ListByLocation(ctx, "loc1", int64(10), int64(1)).Return(nil, stdErr.New("db error"))
 
 		_, err := uc.ListByLocation(ctx, "loc1", 10, 1)
