@@ -33,72 +33,81 @@ func TestStockUseCase_Add(t *testing.T) {
 		Location: "loc1",
 	}
 
-	t.Run("success new insert", func(t *testing.T) {
-		t.Parallel()
+	tests := []struct {
+		name      string
+		mockSetup func()
+		wantErr   error
+	}{
 
-		mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
-		mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(models.StockItem{}, errors.ErrItemNotFound)
-		mockRepo.EXPECT().InsertStockItem(ctx, item).Return(nil)
+		{
+			name: "success new insert",
+			mockSetup: func() {
+				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
+				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(models.StockItem{}, errors.ErrItemNotFound)
+				mockRepo.EXPECT().InsertStockItem(ctx, item).Return(nil)
+			},
+			wantErr: nil,
+		},
 
-		err := uc.Add(ctx, item)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
+		{
+			name: "success update existing",
+			mockSetup: func() {
+				existing := item
+				existing.Count = 3
 
-	t.Run("success update existing", func(t *testing.T) {
-		t.Parallel()
+				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
+				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(existing, nil)
+				mockRepo.EXPECT().UpdateCount(ctx, item.UserID, item.SKU, existing.Count+item.Count).Return(nil)
+			},
+			wantErr: nil,
+		},
 
-		existing := item
-		existing.Count = 3
+		{
+			name: "invalid sku error",
+			mockSetup: func() {
+				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("", "", stdErr.New("not found"))
+			},
+			wantErr: errors.ErrInvalidSKU,
+		},
+		{
+			name: "ownership violation error",
+			mockSetup: func() {
+				existing := item
+				existing.UserID = 999
+				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
+				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(existing, nil)
+			},
+			wantErr: errors.ErrOwnershipViolation,
+		},
 
-		mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
-		mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(existing, nil)
-		mockRepo.EXPECT().UpdateCount(ctx, item.UserID, item.SKU, existing.Count+item.Count).Return(nil)
+		{
+			name: "other repo error",
+			mockSetup: func() {
+				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
+				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(models.StockItem{}, stdErr.New("some error"))
+			},
+			wantErr: stdErr.New("some error"),
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.mockSetup()
 
-		err := uc.Add(ctx, item)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
+			err := uc.Add(ctx, item)
 
-	t.Run("invalid sku error", func(t *testing.T) {
-		t.Parallel()
-
-		mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("", "", stdErr.New("not found"))
-
-		err := uc.Add(ctx, item)
-		if !stdErr.Is(err, errors.ErrInvalidSKU) {
-			t.Fatalf("expected ErrInvalidSKU, got %v", err)
-		}
-	})
-
-	t.Run("ownership violation error", func(t *testing.T) {
-		t.Parallel()
-
-		existing := item
-		existing.UserID = 999
-
-		mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
-		mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(existing, nil)
-
-		err := uc.Add(ctx, item)
-		if !stdErr.Is(err, errors.ErrOwnershipViolation) {
-			t.Fatalf("expected ErrOwnershipViolation, got %v", err)
-		}
-	})
-
-	t.Run("other repo error", func(t *testing.T) {
-		t.Parallel()
-
-		mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
-		mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(models.StockItem{}, stdErr.New("some error"))
-
-		err := uc.Add(ctx, item)
-		if err == nil || err.Error() != "some error" {
-			t.Fatalf("expected some error, got %v", err)
-		}
-	})
+			if tt.wantErr == nil {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+			} else {
+				if err == nil || (!stdErr.Is(err, tt.wantErr) && err.Error() != tt.wantErr.Error()) {
+					t.Fatalf("expected error %v, got %v", tt.wantErr, err)
+				}
+			}
+		})
+	}
 }
 
 func TestStockUseCase_Delete(t *testing.T) {
@@ -113,27 +122,43 @@ func TestStockUseCase_Delete(t *testing.T) {
 	uc := usecase.NewStockUsecase(mockRepo, txManager)
 	ctx := context.Background()
 
-	t.Run("success delete", func(t *testing.T) {
-		t.Parallel()
+	tests := []struct {
+		name      string
+		mockSetup func()
+		wantErr   error
+	}{
 
-		mockRepo.EXPECT().Delete(ctx, uint32(1001)).Return(nil)
+		{
+			name: "success delete",
+			mockSetup: func() {
 
-		err := uc.Delete(ctx, 1001)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
+				mockRepo.EXPECT().Delete(ctx, uint32(1001)).Return(nil)
+			},
+			wantErr: nil,
+		},
+		{
+			name: "delete error",
+			mockSetup: func() {
+				mockRepo.EXPECT().Delete(ctx, uint32(1001)).Return(stdErr.New("delete error"))
+			},
+			wantErr: stdErr.New("delete error"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.mockSetup()
 
-	t.Run("delete error", func(t *testing.T) {
-		t.Parallel()
+			err := uc.Delete(ctx, 1001)
+			if tt.wantErr == nil && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tt.wantErr != nil && (err == nil || err.Error() != tt.wantErr.Error()) {
+				t.Fatalf("expected error %v, got %v", tt.wantErr, err)
+			}
+		})
+	}
 
-		mockRepo.EXPECT().Delete(ctx, uint32(1001)).Return(stdErr.New("delete error"))
-
-		err := uc.Delete(ctx, 1001)
-		if err == nil || err.Error() != "delete error" {
-			t.Fatalf("expected delete error, got %v", err)
-		}
-	})
 }
 
 func TestStockUseCase_GetBySKU(t *testing.T) {
@@ -158,31 +183,53 @@ func TestStockUseCase_GetBySKU(t *testing.T) {
 		Location: "loc1",
 	}
 
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
+	tests := []struct {
+		name         string
+		mockSetup    func()
+		wantItem     models.StockItem
+		expectErrStr string
+	}{
 
-		mockRepo.EXPECT().GetBySKU(ctx, uint32(1001)).Return(expectedItem, nil)
+		{
+			name: "success",
+			mockSetup: func() {
+				mockRepo.EXPECT().GetBySKU(ctx, uint32(1001)).Return(expectedItem, nil)
+			},
+			wantItem: expectedItem,
+		},
+		{
 
-		item, err := uc.GetBySKU(ctx, 1001)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+			name: "not found",
+			mockSetup: func() {
 
-		if item != expectedItem {
-			t.Fatalf("expected %v, got %v", expectedItem, item)
-		}
-	})
+				mockRepo.EXPECT().GetBySKU(ctx, uint32(1001)).Return(models.StockItem{}, stdErr.New("not found"))
+			},
+			expectErrStr: "not found",
+		},
+	}
 
-	t.Run("not found", func(t *testing.T) {
-		t.Parallel()
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.mockSetup()
 
-		mockRepo.EXPECT().GetBySKU(ctx, uint32(1001)).Return(models.StockItem{}, stdErr.New("not found"))
+			item, err := uc.GetBySKU(ctx, 1001)
+			if tt.expectErrStr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if item != tt.wantItem {
+					t.Fatalf("expected %v, got %v", tt.wantItem, item)
+				}
+			} else {
+				if err == nil || err.Error() != tt.expectErrStr {
+					t.Fatalf("expected error %q, got %v", tt.expectErrStr, err)
+				}
+			}
+		})
+	}
 
-		_, err := uc.GetBySKU(ctx, 1001)
-		if err == nil {
-			t.Fatalf("expected error, got nil")
-		}
-	})
 }
 
 func TestStockUseCase_ListByLocation(t *testing.T) {
@@ -218,31 +265,52 @@ func TestStockUseCase_ListByLocation(t *testing.T) {
 		},
 	}
 
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
+	tests := []struct {
+		name         string
+		mockSetup    func()
+		wantItems    []models.StockItem
+		expectErrStr string
+	}{
 
-		mockRepo.EXPECT().ListByLocation(ctx, "loc1", int64(10), int64(1)).Return(expectedItems, nil)
+		{
+			name: "success",
+			mockSetup: func() {
 
-		items, err := uc.ListByLocation(ctx, "loc1", 10, 1)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+				mockRepo.EXPECT().ListByLocation(ctx, "loc1", int64(10), int64(1)).Return(expectedItems, nil)
+			},
+			wantItems: expectedItems,
+		},
 
-		if len(items) != len(expectedItems) {
-			t.Fatalf("expected %d items, got %d", len(expectedItems), len(items))
-		}
-	})
+		{
+			name: "error",
+			mockSetup: func() {
 
-	t.Run("error", func(t *testing.T) {
-		t.Parallel()
+				mockRepo.EXPECT().ListByLocation(ctx, "loc1", int64(10), int64(1)).Return(nil, stdErr.New("db error"))
+			},
+			expectErrStr: "db error",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.mockSetup()
 
-		mockRepo.EXPECT().ListByLocation(ctx, "loc1", int64(10), int64(1)).Return(nil, stdErr.New("db error"))
+			items, err := uc.ListByLocation(ctx, "loc1", 10, 1)
 
-		_, err := uc.ListByLocation(ctx, "loc1", 10, 1)
-		if err == nil {
-			t.Fatalf("expected error, got nil")
-		}
-	})
+			if tt.expectErrStr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if len(items) != len(tt.wantItems) {
+					t.Fatalf("expected %d items, got %d", len(tt.wantItems), len(items))
+				}
+			} else {
+				if err == nil || err.Error() != tt.expectErrStr {
+					t.Fatalf("expected error %q, got %v", tt.expectErrStr, err)
+				}
+			}
+		})
+	}
 }
 
 type mockTxManager struct{}

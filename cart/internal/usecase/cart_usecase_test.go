@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	custErr "cart/internal/errors"
+	"cart/internal/errors"
 	"cart/internal/models"
 	"cart/internal/usecase/mocks"
 	"context"
@@ -30,54 +30,65 @@ func TestCartUseCase_Add(t *testing.T) {
 		Count:  2,
 	}
 
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-		stockItem := models.StockItem{
-			SKU:   100,
-			Count: 10,
-		}
+	tests := []struct {
+		name      string
+		mockSetup func()
+		wantErr   error
+	}{
 
-		mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(stockItem, nil)
-		mockCartRepo.EXPECT().Upsert(ctx, item).Return(nil)
+		{
+			name: "success",
+			mockSetup: func() {
+				stockItem := models.StockItem{SKU: 100, Count: 10}
+				mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(stockItem, nil)
+				mockCartRepo.EXPECT().Upsert(ctx, item).Return(nil)
+			},
+			wantErr: nil,
+		},
 
-		err := u.Add(ctx, item)
-		assert.NoError(t, err)
-	})
+		{
+			name: "invalid sku error",
+			mockSetup: func() {
+				mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(models.StockItem{}, stdErr.New("not found"))
+			},
+			wantErr: errors.ErrInvalidSKU,
+		},
 
-	t.Run("invalid sku error", func(t *testing.T) {
-		t.Parallel()
-		mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(models.StockItem{}, stdErr.New("not found"))
+		{
+			name: "not enough stock error",
+			mockSetup: func() {
+				stockItem := models.StockItem{SKU: 100, Count: 1}
+				mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(stockItem, nil)
+			},
+			wantErr: errors.ErrNotEnoughStock,
+		},
 
-		err := u.Add(ctx, item)
-		assert.ErrorIs(t, err, custErr.ErrInvalidSKU)
-	})
+		{
+			name: "repo error on upsert",
+			mockSetup: func() {
+				stockItem := models.StockItem{SKU: 100, Count: 10}
+				mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(stockItem, nil)
+				mockCartRepo.EXPECT().Upsert(ctx, item).Return(stdErr.New("db error"))
+			},
+			wantErr: stdErr.New("db error"),
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.mockSetup()
 
-	t.Run("not enough stock error", func(t *testing.T) {
-		t.Parallel()
-		stockItem := models.StockItem{
-			SKU:   100,
-			Count: 1,
-		}
+			err := u.Add(ctx, item)
+			if tt.wantErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tt.wantErr.Error())
+			}
+		})
+	}
 
-		mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(stockItem, nil)
-
-		err := u.Add(ctx, item)
-		assert.ErrorIs(t, err, custErr.ErrNotEnoughStock)
-	})
-
-	t.Run("repo error on upsert", func(t *testing.T) {
-		t.Parallel()
-		stockItem := models.StockItem{
-			SKU:   100,
-			Count: 10,
-		}
-
-		mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(stockItem, nil)
-		mockCartRepo.EXPECT().Upsert(ctx, item).Return(stdErr.New("db error"))
-
-		err := u.Add(ctx, item)
-		assert.Error(t, err)
-	})
 }
 
 func TestCartUseCase_Delete(t *testing.T) {
@@ -95,21 +106,44 @@ func TestCartUseCase_Delete(t *testing.T) {
 	userID := int64(1)
 	sku := uint32(100)
 
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-		mockCartRepo.EXPECT().Delete(ctx, userID, sku).Return(nil)
+	tests := []struct {
+		name      string
+		mockSetup func()
+		wantErr   error
+	}{
+		{
+			name: "success",
+			mockSetup: func() {
+				mockCartRepo.EXPECT().Delete(ctx, userID, sku).Return(nil)
+			},
+			wantErr: nil,
+		},
+		{
 
-		err := u.Delete(ctx, userID, sku)
-		assert.NoError(t, err)
-	})
+			name: "repo error",
+			mockSetup: func() {
+				mockCartRepo.EXPECT().Delete(ctx, userID, sku).Return(stdErr.New("db error"))
 
-	t.Run("repo error", func(t *testing.T) {
-		t.Parallel()
-		mockCartRepo.EXPECT().Delete(ctx, userID, sku).Return(stdErr.New("db error"))
+			},
+			wantErr: stdErr.New("db error"),
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.mockSetup()
 
-		err := u.Delete(ctx, userID, sku)
-		assert.Error(t, err)
-	})
+			err := u.Delete(ctx, userID, sku)
+			if tt.wantErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tt.wantErr.Error())
+			}
+		})
+	}
+
 }
 
 func TestCartUseCase_List(t *testing.T) {
@@ -117,11 +151,6 @@ func TestCartUseCase_List(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	mockCartRepo := mocks.NewMockCartRepository(ctrl)
-	mockStockRepo := mocks.NewMockStockRepository(ctrl)
-
-	u := NewCartUsecase(mockCartRepo, mockStockRepo)
 
 	ctx := context.Background()
 	userID := int64(1)
@@ -143,38 +172,80 @@ func TestCartUseCase_List(t *testing.T) {
 		Count: 7,
 	}
 
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
+	tests := []struct {
+		name         string
+		mockSetup    func(cartRepo *mocks.MockCartRepository, stockRepo *mocks.MockStockRepository)
+		wantLen      int
+		wantErr      bool
+		wantErrIs    error
+		wantPriceSKU map[uint32]float64
+	}{
 
-		mockCartRepo.EXPECT().List(ctx, userID).Return(cartItems, nil)
-		mockStockRepo.EXPECT().GetBySKU(ctx, uint32(100)).Return(stockItem1, nil)
-		mockStockRepo.EXPECT().GetBySKU(ctx, uint32(101)).Return(stockItem2, nil)
+		{
+			name: "success",
+			mockSetup: func(cartRepo *mocks.MockCartRepository, stockRepo *mocks.MockStockRepository) {
 
-		result, err := u.List(ctx, userID)
-		assert.NoError(t, err)
-		assert.Len(t, result, 2)
-		assert.Equal(t, stockItem1.Price, result[0].Price)
-		assert.Equal(t, stockItem2.Price, result[1].Price)
-		assert.Equal(t, stockItem1.Count, result[0].Count)
-		assert.Equal(t, stockItem2.Count, result[1].Count)
-	})
+				cartRepo.EXPECT().List(ctx, userID).Return(cartItems, nil)
+				stockRepo.EXPECT().GetBySKU(ctx, uint32(100)).Return(stockItem1, nil)
+				stockRepo.EXPECT().GetBySKU(ctx, uint32(101)).Return(stockItem2, nil)
+			},
+			wantLen: 2,
+			wantPriceSKU: map[uint32]float64{
+				100: 9.99,
+				101: 19.99,
+			},
+		},
+		{
 
-	t.Run("repo list error", func(t *testing.T) {
-		t.Parallel()
-		mockCartRepo.EXPECT().List(ctx, userID).Return(nil, stdErr.New("db error"))
+			name: "repo list error",
+			mockSetup: func(cartRepo *mocks.MockCartRepository, stockRepo *mocks.MockStockRepository) {
+				cartRepo.EXPECT().List(ctx, userID).Return(nil, stdErr.New("db error"))
+			},
+			wantErr:   true,
+			wantErrIs: stdErr.New("db error"),
+		},
+		{
+			name: "stock get error",
+			mockSetup: func(cartRepo *mocks.MockCartRepository, stockRepo *mocks.MockStockRepository) {
+				cartRepo.EXPECT().List(ctx, userID).Return(cartItems, nil)
+				stockRepo.EXPECT().GetBySKU(ctx, uint32(100)).Return(models.StockItem{}, stdErr.New("not found"))
 
-		_, err := u.List(ctx, userID)
-		assert.Error(t, err)
-	})
+			},
+			wantErr: true,
+		},
+	}
 
-	t.Run("stock get error", func(t *testing.T) {
-		t.Parallel()
-		mockCartRepo.EXPECT().List(ctx, userID).Return(cartItems, nil)
-		mockStockRepo.EXPECT().GetBySKU(ctx, uint32(100)).Return(models.StockItem{}, stdErr.New("not found"))
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-		_, err := u.List(ctx, userID)
-		assert.Error(t, err)
-	})
+			mockCartRepo := mocks.NewMockCartRepository(ctrl)
+			mockStockRepo := mocks.NewMockStockRepository(ctrl)
+
+			u := NewCartUsecase(mockCartRepo, mockStockRepo)
+
+			tt.mockSetup(mockCartRepo, mockStockRepo)
+
+			result, err := u.List(ctx, userID)
+
+			if !tt.wantErr {
+				assert.NoError(t, err)
+				assert.Len(t, result, tt.wantLen)
+				for _, r := range result {
+					assert.InDelta(t, tt.wantPriceSKU[r.SKU], r.Price, 0.0001)
+				}
+			} else {
+				assert.Error(t, err)
+				if tt.wantErrIs != nil {
+					assert.EqualError(t, err, tt.wantErrIs.Error())
+				}
+			}
+		})
+	}
+
 }
 
 func TestCartUseCase_Clear(t *testing.T) {
@@ -191,19 +262,42 @@ func TestCartUseCase_Clear(t *testing.T) {
 	ctx := context.Background()
 	userID := int64(1)
 
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-		mockCartRepo.EXPECT().Clear(ctx, userID).Return(nil)
+	tests := []struct {
+		name      string
+		mockSetup func()
+		wantErr   error
+	}{
+		{
+			name: "success",
+			mockSetup: func() {
+				mockCartRepo.EXPECT().Clear(ctx, userID).Return(nil)
+			},
+			wantErr: nil,
+		},
 
-		err := u.Clear(ctx, userID)
-		assert.NoError(t, err)
-	})
+		{
+			name: "repo error",
+			mockSetup: func() {
 
-	t.Run("repo error", func(t *testing.T) {
-		t.Parallel()
-		mockCartRepo.EXPECT().Clear(ctx, userID).Return(stdErr.New("db error"))
+				mockCartRepo.EXPECT().Clear(ctx, userID).Return(stdErr.New("db error"))
+			},
+			wantErr: stdErr.New("db error"),
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.mockSetup()
 
-		err := u.Clear(ctx, userID)
-		assert.Error(t, err)
-	})
+			err := u.Clear(ctx, userID)
+			if tt.wantErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tt.wantErr.Error())
+			}
+		})
+	}
+
 }
