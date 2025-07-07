@@ -23,8 +23,8 @@ import (
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 )
 
-func Run() error {
-	cfg, err := config.Load()
+func Run(envFile string) error {
+	cfg, err := config.Load(envFile)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}

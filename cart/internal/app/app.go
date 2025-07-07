@@ -18,8 +18,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func Run() error {
-	cfg, err := config.Load()
+func Run(envFile string) error {
+	cfg, err := config.Load(envFile)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}

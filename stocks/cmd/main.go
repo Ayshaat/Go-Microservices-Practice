@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	if err := app.Run(); err != nil {
+	if err := app.Run(".env.docker"); err != nil {
 		log.Fatalf("stocks app failed: %v", err)
 	}
 }

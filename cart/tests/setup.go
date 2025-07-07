@@ -22,7 +22,13 @@ func skipIfNotIntegration(t *testing.T) {
 }
 
 func setupTestDB(t *testing.T) *sql.DB {
-	cfg, err := config.Load()
+	var envFile string
+	if os.Getenv("INTEGRATION_TEST") == "1" {
+		envFile = ".env.docker"
+	} else {
+		envFile = ".env.local"
+	}
+	cfg, err := config.Load(envFile)
 	if err != nil {
 		t.Fatalf("failed to load config: %v", err)
 	}
