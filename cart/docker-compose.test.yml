@@ -27,6 +27,7 @@ services:
       - "8090:8090"
     environment:
       - ENV=testing
+      - INTEGRATION_TEST=1
     networks:
       - app-network
     depends_on:
