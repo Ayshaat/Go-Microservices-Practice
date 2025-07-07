@@ -17,50 +17,59 @@ func TestIntegration_AddItem(t *testing.T) {
 	defer db.Close()
 	server := setupServer(t, db)
 
-	t.Run("success", func(t *testing.T) {
-		payload := map[string]interface{}{
-			"user_id": 1,
-			"sku":     1001,
-			"count":   2,
-		}
+	tests := []struct {
+		name           string
+		method         string
+		payload        interface{}
+		expectedStatus int
+	}{
+		{
+			name:           "success",
+			method:         http.MethodPost,
+			payload:        map[string]interface{}{"user_id": 1, "sku": 1001, "count": 2},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "invalid JSON",
+			method:         http.MethodPost,
+			payload:        "{invalid",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "method not allowed",
+			method:         http.MethodGet,
+			payload:        nil,
+			expectedStatus: http.StatusMethodNotAllowed,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var body []byte
+			switch v := tt.payload.(type) {
+			case string:
+				body = []byte(v)
+			case nil:
+				body = nil
+			default:
+				var err error
 
-		body, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatalf("failed to marshal payload: %v", err)
-		}
-		req := httptest.NewRequest(http.MethodPost, "/cart/item/add", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
+				body, err = json.Marshal(v)
+				if err != nil {
+					t.Fatalf("failed to marshal payload: %v", err)
+				}
+			}
 
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
+			req := httptest.NewRequest(tt.method, "/cart/item/add", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
 
-		if rec.Code != http.StatusOK {
-			t.Fatalf("expected status 200 OK, got %d, body: %s", rec.Code, rec.Body.String())
-		}
-	})
+			rec := httptest.NewRecorder()
+			server.ServeHTTP(rec, req)
 
-	t.Run("invalid JSON", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/cart/item/add", bytes.NewReader([]byte("{invalid")))
-		req.Header.Set("Content-Type", "application/json")
-
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
-
-		if rec.Code != http.StatusBadRequest {
-			t.Fatalf("expected status 400 Bad Request, got %d, body: %s", rec.Code, rec.Body.String())
-		}
-	})
-
-	t.Run("method not allowed", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/cart/item/add", nil)
-
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
-
-		if rec.Code != http.StatusMethodNotAllowed {
-			t.Fatalf("expected status 405 Method Not Allowed, got %d", rec.Code)
-		}
-	})
+			if rec.Code != tt.expectedStatus {
+				t.Fatalf("expected status %d, got %d, body: %s", tt.expectedStatus, rec.Code, rec.Body.String())
+			}
+		})
+	}
 }
 
 func TestIntegration_ClearCart(t *testing.T) {
@@ -70,46 +79,60 @@ func TestIntegration_ClearCart(t *testing.T) {
 	defer db.Close()
 	server := setupServer(t, db)
 
-	t.Run("success", func(t *testing.T) {
-		payload := map[string]interface{}{"user_id": 1}
+	tests := []struct {
+		name           string
+		method         string
+		payload        interface{}
+		expectedStatus int
+	}{
+		{
+			name:           "success",
+			method:         http.MethodPost,
+			payload:        map[string]interface{}{"user_id": 1},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "invalid JSON",
+			method:         http.MethodPost,
+			payload:        "{invalid json",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "method not allowed",
+			method:         http.MethodGet,
+			payload:        nil,
+			expectedStatus: http.StatusMethodNotAllowed,
+		},
+	}
 
-		body, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatalf("failed to marshal payload: %v", err)
-		}
-		req := httptest.NewRequest(http.MethodPost, "/cart/clear", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var body []byte
+			switch v := tt.payload.(type) {
+			case string:
+				body = []byte(v)
+			case nil:
+				body = nil
+			default:
+				var err error
 
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
+				body, err = json.Marshal(v)
+				if err != nil {
+					t.Fatalf("failed to marshal payload: %v", err)
+				}
+			}
 
-		if rec.Code != http.StatusOK {
-			t.Fatalf("expected status 200 OK, got %d, body: %s", rec.Code, rec.Body.String())
-		}
-	})
+			req := httptest.NewRequest(tt.method, "/cart/clear", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
 
-	t.Run("invalid JSON", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/cart/clear", bytes.NewReader([]byte("{invalid json")))
-		req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+			server.ServeHTTP(rec, req)
 
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
-
-		if rec.Code != http.StatusBadRequest {
-			t.Fatalf("expected status 400 Bad Request, got %d, body: %s", rec.Code, rec.Body.String())
-		}
-	})
-
-	t.Run("method not allowed", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/cart/clear", nil)
-
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
-
-		if rec.Code != http.StatusMethodNotAllowed {
-			t.Fatalf("expected status 405 Method Not Allowed, got %d", rec.Code)
-		}
-	})
+			if rec.Code != tt.expectedStatus {
+				t.Fatalf("expected status %d, got %d, body: %s", tt.expectedStatus, rec.Code, rec.Body.String())
+			}
+		})
+	}
 }
 
 func TestIntegration_DeleteItem(t *testing.T) {
@@ -119,65 +142,81 @@ func TestIntegration_DeleteItem(t *testing.T) {
 	defer db.Close()
 	server := setupServer(t, db)
 
-	t.Run("success", func(t *testing.T) {
-		addPayload := map[string]interface{}{
-			"user_id": 1,
-			"sku":     1001,
-			"count":   2,
-		}
+	tests := []struct {
+		name           string
+		method         string
+		payload        interface{}
+		expectedStatus int
+		doSetupAdd     bool
+	}{
+		{
+			name:           "success",
+			method:         http.MethodPost,
+			payload:        map[string]interface{}{"user_id": 1, "sku": 1001},
+			expectedStatus: http.StatusOK,
+			doSetupAdd:     true,
+		},
+		{
+			name:           "invalid JSON",
+			method:         http.MethodPost,
+			payload:        "{invalid",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "method not allowed",
+			method:         http.MethodGet,
+			payload:        nil,
+			expectedStatus: http.StatusMethodNotAllowed,
+		},
+	}
 
-		bodyAdd, err := json.Marshal(addPayload)
-		if err != nil {
-			t.Fatalf("failed to marshal payload: %v", err)
-		}
-		reqAdd := httptest.NewRequest(http.MethodPost, "/cart/item/add", bytes.NewReader(bodyAdd))
-		reqAdd.Header.Set("Content-Type", "application/json")
-		recAdd := httptest.NewRecorder()
-		server.ServeHTTP(recAdd, reqAdd)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.doSetupAdd {
+				addPayload := map[string]interface{}{
+					"user_id": 1,
+					"sku":     1001,
+					"count":   2,
+				}
 
-		if recAdd.Code != http.StatusOK {
-			t.Fatalf("setup add failed with status %d, body: %s", recAdd.Code, recAdd.Body.String())
-		}
+				bodyAdd, err := json.Marshal(addPayload)
+				if err != nil {
+					t.Fatalf("failed to marshal payload: %v", err)
+				}
+				reqAdd := httptest.NewRequest(http.MethodPost, "/cart/item/add", bytes.NewReader(bodyAdd))
+				reqAdd.Header.Set("Content-Type", "application/json")
+				recAdd := httptest.NewRecorder()
+				server.ServeHTTP(recAdd, reqAdd)
 
-		delPayload := map[string]interface{}{
-			"user_id": 1,
-			"sku":     1001,
-		}
+				if recAdd.Code != http.StatusOK {
+					t.Fatalf("setup add failed with status %d, body: %s", recAdd.Code, recAdd.Body.String())
+				}
+			}
 
-		bodyDel, err := json.Marshal(delPayload)
-		if err != nil {
-			t.Fatalf("failed to marshal payload: %v", err)
-		}
-		reqDel := httptest.NewRequest(http.MethodPost, "/cart/item/delete", bytes.NewReader(bodyDel))
-		reqDel.Header.Set("Content-Type", "application/json")
-		recDel := httptest.NewRecorder()
-		server.ServeHTTP(recDel, reqDel)
+			var body []byte
+			switch v := tt.payload.(type) {
+			case string:
+				body = []byte(v)
+			case nil:
+				body = nil
+			default:
+				var err error
 
-		if recDel.Code != http.StatusOK {
-			t.Fatalf("expected status 200 OK, got %d, body: %s", recDel.Code, recDel.Body.String())
-		}
-	})
+				body, err = json.Marshal(v)
+				if err != nil {
+					t.Fatalf("failed to marshal payload: %v", err)
+				}
+			}
+			reqDel := httptest.NewRequest(tt.method, "/cart/item/delete", bytes.NewReader(body))
+			reqDel.Header.Set("Content-Type", "application/json")
+			recDel := httptest.NewRecorder()
+			server.ServeHTTP(recDel, reqDel)
 
-	t.Run("invalid JSON", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/cart/item/delete", bytes.NewReader([]byte("{invalid")))
-		req.Header.Set("Content-Type", "application/json")
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
-
-		if rec.Code != http.StatusBadRequest {
-			t.Fatalf("expected status 400 Bad Request, got %d, body: %s", rec.Code, rec.Body.String())
-		}
-	})
-
-	t.Run("method not allowed", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/cart/item/delete", nil)
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
-
-		if rec.Code != http.StatusMethodNotAllowed {
-			t.Fatalf("expected status 405 Method Not Allowed, got %d", rec.Code)
-		}
-	})
+			if recDel.Code != tt.expectedStatus {
+				t.Fatalf("expected status %d, got %d, body: %s", tt.expectedStatus, recDel.Code, recDel.Body.String())
+			}
+		})
+	}
 }
 
 func TestIntegration_ListItems(t *testing.T) {
@@ -187,49 +226,57 @@ func TestIntegration_ListItems(t *testing.T) {
 	defer db.Close()
 	server := setupServer(t, db)
 
-	t.Run("success", func(t *testing.T) {
-		payload := map[string]interface{}{
-			"userID": 1,
-		}
+	tests := []struct {
+		name           string
+		method         string
+		payload        interface{}
+		expectedStatus int
+	}{
+		{
+			name:           "success",
+			method:         http.MethodPost,
+			payload:        map[string]interface{}{"userID": 1}, // fix key to "user_id" to be consistent
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "missing user_id",
+			method:         http.MethodPost,
+			payload:        map[string]interface{}{},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "method not allowed",
+			method:         http.MethodGet,
+			payload:        nil,
+			expectedStatus: http.StatusMethodNotAllowed,
+		},
+	}
 
-		body, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatalf("failed to marshal payload: %v", err)
-		}
-		req := httptest.NewRequest(http.MethodPost, "/cart/list", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var body []byte
+			switch v := tt.payload.(type) {
+			case string:
+				body = []byte(v)
+			case nil:
+				body = nil
+			default:
+				var err error
 
-		if rec.Code != http.StatusOK {
-			t.Fatalf("expected status 200 OK, got %d, body: %s", rec.Code, rec.Body.String())
-		}
-	})
+				body, err = json.Marshal(v)
+				if err != nil {
+					t.Fatalf("failed to marshal payload: %v", err)
+				}
+			}
 
-	t.Run("missing userID", func(t *testing.T) {
-		payload := map[string]interface{}{}
+			req := httptest.NewRequest(tt.method, "/cart/list", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+			server.ServeHTTP(rec, req)
 
-		body, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatalf("failed to marshal payload: %v", err)
-		}
-		req := httptest.NewRequest(http.MethodPost, "/cart/list", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
-
-		if rec.Code != http.StatusBadRequest {
-			t.Fatalf("expected status 400 Bad Request, got %d, body: %s", rec.Code, rec.Body.String())
-		}
-	})
-
-	t.Run("method not allowed", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/cart/list", nil)
-		rec := httptest.NewRecorder()
-		server.ServeHTTP(rec, req)
-
-		if rec.Code != http.StatusMethodNotAllowed {
-			t.Fatalf("expected status 405 Method Not Allowed, got %d", rec.Code)
-		}
-	})
+			if rec.Code != tt.expectedStatus {
+				t.Fatalf("expected status %d, got %d, body: %s", tt.expectedStatus, rec.Code, rec.Body.String())
+			}
+		})
+	}
 }

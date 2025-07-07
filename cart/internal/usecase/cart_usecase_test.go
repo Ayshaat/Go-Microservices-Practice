@@ -74,7 +74,6 @@ func TestCartUseCase_Add(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tt.mockSetup()
@@ -88,7 +87,6 @@ func TestCartUseCase_Add(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestCartUseCase_Delete(t *testing.T) {
@@ -123,13 +121,11 @@ func TestCartUseCase_Delete(t *testing.T) {
 			name: "repo error",
 			mockSetup: func() {
 				mockCartRepo.EXPECT().Delete(ctx, userID, sku).Return(stdErr.New("db error"))
-
 			},
 			wantErr: stdErr.New("db error"),
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tt.mockSetup()
@@ -143,7 +139,6 @@ func TestCartUseCase_Delete(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestCartUseCase_List(t *testing.T) {
@@ -184,7 +179,6 @@ func TestCartUseCase_List(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(cartRepo *mocks.MockCartRepository, stockRepo *mocks.MockStockRepository) {
-
 				cartRepo.EXPECT().List(ctx, userID).Return(cartItems, nil)
 				stockRepo.EXPECT().GetBySKU(ctx, uint32(100)).Return(stockItem1, nil)
 				stockRepo.EXPECT().GetBySKU(ctx, uint32(101)).Return(stockItem2, nil)
@@ -209,16 +203,15 @@ func TestCartUseCase_List(t *testing.T) {
 			mockSetup: func(cartRepo *mocks.MockCartRepository, stockRepo *mocks.MockStockRepository) {
 				cartRepo.EXPECT().List(ctx, userID).Return(cartItems, nil)
 				stockRepo.EXPECT().GetBySKU(ctx, uint32(100)).Return(models.StockItem{}, stdErr.New("not found"))
-
 			},
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -234,18 +227,19 @@ func TestCartUseCase_List(t *testing.T) {
 			if !tt.wantErr {
 				assert.NoError(t, err)
 				assert.Len(t, result, tt.wantLen)
+
 				for _, r := range result {
 					assert.InDelta(t, tt.wantPriceSKU[r.SKU], r.Price, 0.0001)
 				}
 			} else {
 				assert.Error(t, err)
+
 				if tt.wantErrIs != nil {
 					assert.EqualError(t, err, tt.wantErrIs.Error())
 				}
 			}
 		})
 	}
-
 }
 
 func TestCartUseCase_Clear(t *testing.T) {
@@ -278,14 +272,12 @@ func TestCartUseCase_Clear(t *testing.T) {
 		{
 			name: "repo error",
 			mockSetup: func() {
-
 				mockCartRepo.EXPECT().Clear(ctx, userID).Return(stdErr.New("db error"))
 			},
 			wantErr: stdErr.New("db error"),
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tt.mockSetup()
@@ -299,5 +291,4 @@ func TestCartUseCase_Clear(t *testing.T) {
 			}
 		})
 	}
-
 }

@@ -16,14 +16,6 @@ import (
 func TestStockUseCase_Add(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mocks.NewMockStockRepository(ctrl)
-	txManager := &mockTxManager{}
-
-	uc := usecase.NewStockUsecase(mockRepo, txManager)
-
 	ctx := context.Background()
 	item := models.StockItem{
 		UserID:   1,
@@ -35,13 +27,13 @@ func TestStockUseCase_Add(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		mockSetup func()
+		mockSetup func(mockRepo *mocks.MockStockRepository)
 		wantErr   error
 	}{
 
 		{
 			name: "success new insert",
-			mockSetup: func() {
+			mockSetup: func(mockRepo *mocks.MockStockRepository) {
 				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
 				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(models.StockItem{}, errors.ErrItemNotFound)
 				mockRepo.EXPECT().InsertStockItem(ctx, item).Return(nil)
@@ -51,7 +43,7 @@ func TestStockUseCase_Add(t *testing.T) {
 
 		{
 			name: "success update existing",
-			mockSetup: func() {
+			mockSetup: func(mockRepo *mocks.MockStockRepository) {
 				existing := item
 				existing.Count = 3
 
@@ -64,14 +56,14 @@ func TestStockUseCase_Add(t *testing.T) {
 
 		{
 			name: "invalid sku error",
-			mockSetup: func() {
+			mockSetup: func(mockRepo *mocks.MockStockRepository) {
 				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("", "", stdErr.New("not found"))
 			},
 			wantErr: errors.ErrInvalidSKU,
 		},
 		{
 			name: "ownership violation error",
-			mockSetup: func() {
+			mockSetup: func(mockRepo *mocks.MockStockRepository) {
 				existing := item
 				existing.UserID = 999
 				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
@@ -82,7 +74,7 @@ func TestStockUseCase_Add(t *testing.T) {
 
 		{
 			name: "other repo error",
-			mockSetup: func() {
+			mockSetup: func(mockRepo *mocks.MockStockRepository) {
 				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
 				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(models.StockItem{}, stdErr.New("some error"))
 			},
@@ -90,10 +82,17 @@ func TestStockUseCase_Add(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			tt.mockSetup()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mocks.NewMockStockRepository(ctrl)
+			txManager := &mockTxManager{}
+
+			uc := usecase.NewStockUsecase(mockRepo, txManager)
+			tt.mockSetup(mockRepo)
 
 			err := uc.Add(ctx, item)
 
@@ -131,7 +130,6 @@ func TestStockUseCase_Delete(t *testing.T) {
 		{
 			name: "success delete",
 			mockSetup: func() {
-
 				mockRepo.EXPECT().Delete(ctx, uint32(1001)).Return(nil)
 			},
 			wantErr: nil,
@@ -153,12 +151,12 @@ func TestStockUseCase_Delete(t *testing.T) {
 			if tt.wantErr == nil && err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
+
 			if tt.wantErr != nil && (err == nil || err.Error() != tt.wantErr.Error()) {
 				t.Fatalf("expected error %v, got %v", tt.wantErr, err)
 			}
 		})
 	}
-
 }
 
 func TestStockUseCase_GetBySKU(t *testing.T) {
@@ -201,7 +199,6 @@ func TestStockUseCase_GetBySKU(t *testing.T) {
 
 			name: "not found",
 			mockSetup: func() {
-
 				mockRepo.EXPECT().GetBySKU(ctx, uint32(1001)).Return(models.StockItem{}, stdErr.New("not found"))
 			},
 			expectErrStr: "not found",
@@ -209,7 +206,6 @@ func TestStockUseCase_GetBySKU(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tt.mockSetup()
@@ -219,6 +215,7 @@ func TestStockUseCase_GetBySKU(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
+
 				if item != tt.wantItem {
 					t.Fatalf("expected %v, got %v", tt.wantItem, item)
 				}
@@ -229,7 +226,6 @@ func TestStockUseCase_GetBySKU(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestStockUseCase_ListByLocation(t *testing.T) {
@@ -275,7 +271,6 @@ func TestStockUseCase_ListByLocation(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func() {
-
 				mockRepo.EXPECT().ListByLocation(ctx, "loc1", int64(10), int64(1)).Return(expectedItems, nil)
 			},
 			wantItems: expectedItems,
@@ -284,7 +279,6 @@ func TestStockUseCase_ListByLocation(t *testing.T) {
 		{
 			name: "error",
 			mockSetup: func() {
-
 				mockRepo.EXPECT().ListByLocation(ctx, "loc1", int64(10), int64(1)).Return(nil, stdErr.New("db error"))
 			},
 			expectErrStr: "db error",
@@ -301,6 +295,7 @@ func TestStockUseCase_ListByLocation(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
+
 				if len(items) != len(tt.wantItems) {
 					t.Fatalf("expected %d items, got %d", len(tt.wantItems), len(items))
 				}
