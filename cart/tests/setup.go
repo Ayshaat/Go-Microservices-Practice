@@ -6,6 +6,7 @@ import (
 	"cart/internal/repository"
 	"cart/internal/stockclient"
 	"cart/internal/usecase"
+	"cart/tests/mock"
 	"database/sql"
 	"net/http"
 	"os"
@@ -40,17 +41,16 @@ func setupTestDB(t *testing.T) *sql.DB {
 }
 
 func setupServer(t *testing.T, db *sql.DB) http.Handler {
-	cfg, err := config.Load()
-	if err != nil {
-		t.Fatalf("failed to load config: %v", err)
-	}
-
 	cartRepo := repository.NewPostgresCartRepo(db)
 
-	stockCli, err := stockclient.New(cfg.StockServiceURL)
+	mockStock := mock.StartMockStockServer()
+	t.Cleanup(mockStock.Close)
+
+	stockCli, err := stockclient.New(mockStock.URL)
 	if err != nil {
 		t.Fatalf("failed to create stock client: %v", err)
 	}
+
 	cartUsecase := usecase.NewCartUsecase(cartRepo, stockCli)
 	handler := delivery.NewHandler(cartUsecase)
 

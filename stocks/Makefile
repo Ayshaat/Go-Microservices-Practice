@@ -31,11 +31,19 @@ stop-test-env:
 	@echo "Stopping test environment..."
 	docker-compose -f $(COMPOSE_FILE) down
 
+ifeq ($(OS),Windows_NT)
+export_env = powershell -Command "$$env:INTEGRATION_TEST='1'; go test -v ./tests"
+sleep_cmd = timeout /t 10 /nobreak >nul
+else
+export_env = INTEGRATION_TEST=1 go test -v ./tests
+sleep_cmd = sleep 10
+endif
+
 test-integration: start-test-env
 	@echo "Waiting for services to be healthy..."
-	@sleep 10
+	@$(sleep_cmd)
 	@echo "Running integration tests..."
-	@INTEGRATION_TEST=1 go test -v ./tests
+	@$(export_env)
 	$(MAKE) stop-test-env
 
 clean:
