@@ -26,28 +26,21 @@ func skipIfNotIntegration(t *testing.T) {
 }
 
 func setupTestDB(t *testing.T) *sqlx.DB {
-	var envFile string
-	if os.Getenv("INTEGRATION_TEST") == "1" {
-		envFile = ".env.docker"
-	} else {
-		envFile = ".env.local"
+	if os.Getenv("INTEGRATION_TEST") != "1" {
+		t.Skip("Skipping integration test: INTEGRATION_TEST not set")
 	}
-	cfg, err := config.Load(envFile)
+
+	cfg, err := config.Load("../.env.local")
 	if err != nil {
 		t.Fatalf("failed to load config: %v", err)
 	}
 
-	sqlDB, err := db.ConnectDB(cfg.PostgresConnStr())
+	sqlDB, err := db.ConnectDB(cfg.PostgresConnStr(), "../internal/db/migrations")
 	if err != nil {
 		t.Fatalf("failed to connect db: %v", err)
 	}
 
 	dbx := sqlx.NewDb(sqlDB, "postgres")
-
-	if err := db.RunMigrations(dbx.DB); err != nil {
-		t.Fatalf("failed to run migrations: %v", err)
-	}
-
 	// Clean tables before tests
 	if _, err := dbx.Exec("DELETE FROM stock_items"); err != nil {
 		t.Fatalf("failed to clear stock_items: %v", err)

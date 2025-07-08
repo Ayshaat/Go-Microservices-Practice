@@ -58,3 +58,18 @@ docker-build:
 docker-push:
 	@echo "Pushing Docker image $(DOCKER_IMAGE)..."
 	docker push $(DOCKER_IMAGE)
+
+MIGRATIONS_DIR=internal/db/migrations
+
+migrate-up:
+	goose -dir $(MIGRATIONS_DIR) postgres "$(GOOSE_DB_URL)" up
+
+migrate-down:
+	goose -dir $(MIGRATIONS_DIR) postgres "$(GOOSE_DB_URL)" down
+
+migrate-status:
+	goose -dir $(MIGRATIONS_DIR) postgres "$(GOOSE_DB_URL)" status
+
+migrate-create:
+	@read -p "Migration name: " name; \
+	goose -dir $(MIGRATIONS_DIR) create $$name sql

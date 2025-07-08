@@ -4,7 +4,7 @@ PORT := 8090
 DOCKER_IMAGE := ayshaat/cart:hw7
 COMPOSE_FILE := docker-compose.test.yml
 
-.PHONY: build run test clean tart-test-env stop-test-env test-integration unit-test docker-build docker-push
+.PHONY: build run test clean tart-test-env stop-test-env test-integration unit-test docker-build docker-push migrate-up migrate-down migrate-status migrate-create
 
 build:
 	@echo "Building $(APP_NAME)..."
@@ -59,3 +59,18 @@ docker-build:
 docker-push:
 	@echo "Pushing Docker image $(DOCKER_IMAGE)..."
 	docker push $(DOCKER_IMAGE)
+
+MIGRATIONS_DIR=internal/db/migrations
+
+migrate-up:
+	goose -dir $(MIGRATIONS_DIR) postgres "$(GOOSE_DB_URL)" up
+
+migrate-down:
+	goose -dir $(MIGRATIONS_DIR) postgres "$(GOOSE_DB_URL)" down
+
+migrate-status:
+	goose -dir $(MIGRATIONS_DIR) postgres "$(GOOSE_DB_URL)" status
+
+migrate-create:
+	@read -p "Migration name: " name; \
+	goose -dir $(MIGRATIONS_DIR) create $$name sql

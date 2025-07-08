@@ -26,8 +26,7 @@ services:
     ports:
       - "8090:8090"
     environment:
-      - ENV=testing
-      - INTEGRATION_TEST=1
+      - ENV=production
     networks:
       - app-network
     depends_on:

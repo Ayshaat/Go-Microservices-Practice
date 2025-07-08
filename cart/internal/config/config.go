@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -21,7 +22,7 @@ type Config struct {
 }
 
 func Load(envFile string) (*Config, error) {
-	if err := godotenv.Load("/app/" + envFile); err != nil {
+	if err := godotenv.Load(envFile); err != nil {
 		return nil, fmt.Errorf("error loading %s file: %w", envFile, err)
 	}
 
@@ -38,6 +39,8 @@ func Load(envFile string) (*Config, error) {
 		WriteTimeout:    WriteTimeout,
 		IdleTimeout:     IdleTimeout,
 	}
+
+	log.Println(cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 
 	if cfg.DBHost == "" || cfg.DBUser == "" || cfg.DBName == "" {
 		return nil, fmt.Errorf("missing required environment variables")

@@ -29,7 +29,7 @@ func Run(envFile string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	database, err := db.ConnectDB(cfg.PostgresConnStr())
+	database, err := db.ConnectDB(cfg.PostgresConnStr(), "internal/db/migrations")
 	if err != nil {
 		return fmt.Errorf("failed to connect and migrate db: %w", err)
 	}

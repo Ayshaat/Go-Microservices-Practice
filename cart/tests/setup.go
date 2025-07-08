@@ -22,13 +22,11 @@ func skipIfNotIntegration(t *testing.T) {
 }
 
 func setupTestDB(t *testing.T) *sql.DB {
-	var envFile string
-	if os.Getenv("INTEGRATION_TEST") == "1" {
-		envFile = ".env.docker"
-	} else {
-		envFile = ".env.local"
+	if os.Getenv("INTEGRATION_TEST") != "1" {
+		t.Skip("Skipping integration test: INTEGRATION_TEST not set")
 	}
-	cfg, err := config.Load(envFile)
+
+	cfg, err := config.Load("../.env.local")
 	if err != nil {
 		t.Fatalf("failed to load config: %v", err)
 	}

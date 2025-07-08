@@ -3,10 +3,9 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
-	"os"
-
 	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
+	"log"
 )
 
 func ConnectDB(connStr string) (*sql.DB, error) {
@@ -27,17 +26,10 @@ func ConnectDB(connStr string) (*sql.DB, error) {
 }
 
 func runMigrations(db *sql.DB) error {
-	sqlBytes, err := os.ReadFile("internal/db/migrations.sql")
-	if err != nil {
-		return fmt.Errorf("failed to read migrations file: %w", err)
-	}
-
-	_, err = db.Exec(string(sqlBytes))
-	if err != nil {
-		return fmt.Errorf("failed to execute migrations: %w", err)
+	if err := goose.Up(db, "internal/db/migrations"); err != nil {
+		return fmt.Errorf("migrations: %w", err)
 	}
 
 	log.Println("Migrations applied successfully.")
-
 	return nil
 }
