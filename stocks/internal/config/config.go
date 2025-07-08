@@ -19,9 +19,9 @@ type Config struct {
 	IdleTimeout  time.Duration
 }
 
-func Load() (*Config, error) {
-	if err := godotenv.Load(".env.local"); err != nil {
-		return nil, fmt.Errorf("error loading .env file: %w", err)
+func Load(envFile string) (*Config, error) {
+	if err := godotenv.Load(envFile); err != nil {
+		return nil, fmt.Errorf("error loading %s file: %w", envFile, err)
 	}
 
 	cfg := &Config{
@@ -43,7 +43,12 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) PostgresConnStr() string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName,
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		c.DBUser,
+		c.DBPassword,
+		c.DBHost,
+		c.DBPort,
+		c.DBName,
 	)
 }

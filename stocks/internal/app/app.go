@@ -23,13 +23,13 @@ import (
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 )
 
-func Run() error {
-	cfg, err := config.Load()
+func Run(envFile string) error {
+	cfg, err := config.Load(envFile)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	database, err := db.ConnectDB(cfg.PostgresConnStr())
+	database, err := db.ConnectDB(cfg.PostgresConnStr(), "internal/db/migrations")
 	if err != nil {
 		return fmt.Errorf("failed to connect and migrate db: %w", err)
 	}

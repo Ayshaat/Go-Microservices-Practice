@@ -5,6 +5,8 @@ import (
 	"stocks/internal/models"
 )
 
+//go:generate mockgen -source=internal/repository/repository.go -destination=internal/repository/mocks/stockrepo_mock.go -package=mocks
+
 type StockRepository interface {
 	Delete(ctx context.Context, sku uint32) error
 	GetBySKU(ctx context.Context, sku uint32) (models.StockItem, error)
