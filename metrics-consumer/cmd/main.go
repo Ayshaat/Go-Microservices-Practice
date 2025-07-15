@@ -10,7 +10,7 @@ import (
 	"metrics-consumer/internal/config"
 	"metrics-consumer/internal/kafka"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 func main() {
