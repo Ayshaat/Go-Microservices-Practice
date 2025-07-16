@@ -86,7 +86,7 @@ services:
       - kafka1
       - kafka2
     ports:
-      - "8080:8080"
+      - "8085:8080"
     environment:
       AUTH_TYPE: DISABLED
       KAFKA_CLUSTERS_0_NAME: local-kafka

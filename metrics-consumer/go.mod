@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 module github.com/ayshaat/metrics-consumer
-=======
-module metrics-consumer
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 
 go 1.24.5
 
@@ -22,7 +18,6 @@ require (
 	github.com/jcmturner/gofork v1.7.6 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.3 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
-<<<<<<< HEAD
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
@@ -30,11 +25,4 @@ require (
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
-=======
-	github.com/klauspost/compress v1.15.11 // indirect
-	github.com/pierrec/lz4/v4 v4.1.17 // indirect
-	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
-	golang.org/x/net v0.4.0 // indirect
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 )

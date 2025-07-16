@@ -4,8 +4,4 @@ use (
 	./cart
 	./metrics-consumer
 	./stocks
-<<<<<<< HEAD
-=======
-	./metrics-consumer
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 )

@@ -14,7 +14,8 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load()
+	envFile := ".env.docker"
+	cfg, err := config.Load(envFile)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}

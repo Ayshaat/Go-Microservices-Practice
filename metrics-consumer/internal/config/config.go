@@ -12,7 +12,8 @@ type Config struct {
 	Topic         string
 }
 
-func Load() (*Config, error) {
+func Load(envFile string) (*Config, error) {
+
 	brokersEnv := os.Getenv("KAFKA_BROKERS")
 	if brokersEnv == "" {
 		return nil, fmt.Errorf("KAFKA_BROKERS is required")

@@ -12,7 +12,7 @@ func main() {
 	case "production":
 		file = "/app/.env.docker"
 	case "local":
-		file = "../.env.local"
+		file = ".env.local"
 	default:
 		log.Fatalf("Environment variable ENV is not set.")
 	}

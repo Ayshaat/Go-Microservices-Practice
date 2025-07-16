@@ -1,0 +1,18 @@
+services:
+  metrics-consumer:
+    build: .
+    image: ayshaat/metrics-consumer:latest
+    container_name: metrics-consumer
+    env_file:
+      - .env.docker
+    networks:
+      - shared-net
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep metrics-consumer || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  shared-net:
+    external: true
