@@ -7,7 +7,7 @@ import (
 
 	"cart/internal/event"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 const maxProducerRetry = 5
