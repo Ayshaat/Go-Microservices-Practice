@@ -59,7 +59,6 @@ func TestStockUseCase_Add(t *testing.T) {
 				mockProducer.EXPECT().
 					SendStockChanged(fmt.Sprint(existing.SKU), int(existing.Count+item.Count), existing.Price).
 					Return(nil)
-
 			},
 			wantErr: nil,
 		},

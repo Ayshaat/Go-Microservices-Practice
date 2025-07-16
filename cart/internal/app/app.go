@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	_ "github.com/lib/pq"
@@ -39,15 +38,9 @@ func Run(envFile string) error {
 		return fmt.Errorf("failed to create stock client: %w", err)
 	}
 
-	brokersEnv := os.Getenv("KAFKA_BROKERS")
-	if brokersEnv == "" {
-		return fmt.Errorf("KAFKA_BROKERS env var is not set")
-	}
-
-	brokers := strings.Split(brokersEnv, ",")
-
-	producerConfig := kafka.ProducerConfig{
-		Brokers: brokers,
+	producerConfig, err := kafka.NewProducerConfigFromEnv()
+	if err != nil {
+		return fmt.Errorf("failed to create kafka producer config: %w", err)
 	}
 
 	producer, err := kafka.NewProducer(producerConfig)

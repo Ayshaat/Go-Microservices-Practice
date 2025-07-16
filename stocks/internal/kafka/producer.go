@@ -3,6 +3,9 @@ package kafka
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"stocks/internal/event"
@@ -26,11 +29,14 @@ type Producer struct {
 	service   string
 }
 
-func NewProducer(cfg ProducerConfig) (*Producer, error) {
+func NewProducer(cfg *ProducerConfig) (*Producer, error) {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.NoResponse
 	config.Producer.Return.Successes = true
 	config.Producer.Retry.Max = maxProducerRetry
+	config.Producer.Partitioner = func(topic string) sarama.Partitioner {
+		return sarama.NewManualPartitioner(topic)
+	}
 
 	producer, err := sarama.NewSyncProducer(cfg.Brokers, config)
 	if err != nil {
@@ -95,4 +101,39 @@ func (p *Producer) send(eventType string, payload interface{}) error {
 
 func (p *Producer) Close() error {
 	return p.producer.Close()
+}
+
+func NewProducerConfigFromEnv() (*ProducerConfig, error) {
+	brokersEnv := os.Getenv("KAFKA_BROKERS")
+	if brokersEnv == "" {
+		return nil, fmt.Errorf("KAFKA_BROKERS env var is not set")
+	}
+	brokers := strings.Split(brokersEnv, ",")
+
+	topic := os.Getenv("KAFKA_TOPIC")
+	if topic == "" {
+		topic = "metrics"
+	}
+
+	partitionStr := os.Getenv("PARTITION")
+	if partitionStr == "" {
+		partitionStr = "1"
+	}
+
+	partition, err := strconv.Atoi(partitionStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse PARTITION: %w", err)
+	}
+
+	service := os.Getenv("SERVICE_NAME")
+	if service == "" {
+		service = "stocks-service"
+	}
+
+	return &ProducerConfig{
+		Brokers:   brokers,
+		Topic:     topic,
+		Partition: int32(partition),
+		Service:   service,
+	}, nil
 }

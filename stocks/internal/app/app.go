@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	_ "github.com/lib/pq"
@@ -47,23 +46,9 @@ func Run(envFile string) error {
 
 	repo := repository.NewPostgresStockRepo(dbx, txCtxGetter)
 
-	brokersEnv := os.Getenv("KAFKA_BROKERS")
-	if brokersEnv == "" {
-		return fmt.Errorf("KAFKA_BROKERS env var is not set")
-	}
-	brokers := strings.Split(brokersEnv, ",")
-
-	topic := os.Getenv("KAFKA_TOPIC")
-	if topic == "" {
-		topic = "stocks"
-	}
-
-	partition := int32(0)
-
-	producerConfig := kafka.ProducerConfig{
-		Brokers:   brokers,
-		Topic:     topic,
-		Partition: partition,
+	producerConfig, err := kafka.NewProducerConfigFromEnv()
+	if err != nil {
+		return fmt.Errorf("failed to create kafka producer config: %w", err)
 	}
 
 	producer, err := kafka.NewProducer(producerConfig)

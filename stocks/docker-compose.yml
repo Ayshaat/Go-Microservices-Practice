@@ -5,20 +5,17 @@ services:
     image: ayshaat/stocks:hw7
     container_name: stock-service
     depends_on:
-      postgres:
+      stock-postgres:
         condition: service_healthy
     ports:
       - "8081:8080"  
     environment:
       - ENV=production
-      - KAFKA_BROKERS=kafka1:9092,kafka2:9092
-      - TOPIC=metrics
-      - PARTITION=1
     networks:
       - app-network
       - shared-net
 
-  postgres:
+  stock-postgres:
     image: postgres:16
     container_name: stock-db
     restart: always
