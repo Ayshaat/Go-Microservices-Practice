@@ -11,8 +11,12 @@ services:
       - "8081:8080"  
     environment:
       - ENV=production
+      - KAFKA_BROKERS=kafka1:9092,kafka2:9092
+      - TOPIC=metrics
+      - PARTITION=1
     networks:
       - app-network
+      - shared-net
 
   postgres:
     image: postgres:16
@@ -36,3 +40,6 @@ networks:
   app-network:
     external: true
     name: my-global-shared-network
+  shared-net:
+    external: true
+    name: shared-net

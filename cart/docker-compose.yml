@@ -7,8 +7,12 @@ services:
       - "8090:8090"
     environment:
       - ENV=production
+      - KAFKA_BROKERS=kafka1:9092,kafka2:9092
+      - TOPIC=metrics
+      - PARTITION=0
     networks:
       - app-network
+      - shared-net
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,3 +39,6 @@ networks:
   app-network:
     external: true
     name: my-global-shared-network
+  shared-net:
+    external: true
+    name: shared-net

@@ -3,9 +3,10 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log"
+
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
-	"log"
 )
 
 func ConnectDB(connStr string) (*sql.DB, error) {
@@ -31,5 +32,6 @@ func runMigrations(db *sql.DB) error {
 	}
 
 	log.Println("Migrations applied successfully.")
+
 	return nil
 }
