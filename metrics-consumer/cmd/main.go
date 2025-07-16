@@ -15,6 +15,7 @@ import (
 
 func main() {
 	envFile := ".env.docker"
+
 	cfg, err := config.Load(envFile)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
@@ -28,6 +29,7 @@ func main() {
 	consumer := kafka.NewConsumer()
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	client, err := sarama.NewConsumerGroup(cfg.KafkaBrokers, cfg.ConsumerGroup, configSarama)
 	if err != nil {
 		log.Fatalf("Error creating consumer group client: %v", err)

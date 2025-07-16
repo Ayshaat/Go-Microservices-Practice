@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	_ "github.com/lib/pq"
@@ -14,6 +15,7 @@ import (
 	"stocks/internal/config"
 	"stocks/internal/db"
 	"stocks/internal/delivery"
+	"stocks/internal/kafka"
 	"stocks/internal/repository"
 	"stocks/internal/usecase"
 
@@ -44,7 +46,38 @@ func Run(envFile string) error {
 	txCtxGetter := trmsqlx.DefaultCtxGetter
 
 	repo := repository.NewPostgresStockRepo(dbx, txCtxGetter)
-	useCase := usecase.NewStockUsecase(repo, txManager)
+
+	brokersEnv := os.Getenv("KAFKA_BROKERS")
+	if brokersEnv == "" {
+		return fmt.Errorf("KAFKA_BROKERS env var is not set")
+	}
+	brokers := strings.Split(brokersEnv, ",")
+
+	topic := os.Getenv("KAFKA_TOPIC")
+	if topic == "" {
+		topic = "stocks"
+	}
+
+	partition := int32(0)
+
+	producerConfig := kafka.ProducerConfig{
+		Brokers:   brokers,
+		Topic:     topic,
+		Partition: partition,
+	}
+
+	producer, err := kafka.NewProducer(producerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kafka producer: %w", err)
+	}
+
+	defer func() {
+		if err := producer.Close(); err != nil {
+			log.Printf("failed to close kafka producer: %v", err)
+		}
+	}()
+
+	useCase := usecase.NewStockUsecase(repo, txManager, producer)
 	handler := delivery.NewHandler(useCase)
 
 	mux := http.NewServeMux()

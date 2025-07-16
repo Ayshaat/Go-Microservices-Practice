@@ -52,6 +52,7 @@ func (p *Producer) SendCartItemAdded(cartId, sku string, count int, status strin
 		Count:  count,
 		Status: status,
 	}
+
 	return p.send("cart_item_added", payload)
 }
 
@@ -63,6 +64,7 @@ func (p *Producer) SendCartItemFailed(cartId, sku string, count int, status, rea
 		Status: status,
 		Reason: reason,
 	}
+
 	return p.send("cart_item_failed", payload)
 }
 

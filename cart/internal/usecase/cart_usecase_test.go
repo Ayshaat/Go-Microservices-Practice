@@ -20,8 +20,9 @@ func TestCartUseCase_Add(t *testing.T) {
 
 	mockCartRepo := mocks.NewMockCartRepository(ctrl)
 	mockStockRepo := mocks.NewMockStockRepository(ctrl)
+	mockProducer := mocks.NewMockProducerInterface(ctrl)
 
-	u := NewCartUsecase(mockCartRepo, mockStockRepo)
+	u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer)
 
 	ctx := context.Background()
 	item := models.CartItem{
@@ -97,8 +98,9 @@ func TestCartUseCase_Delete(t *testing.T) {
 
 	mockCartRepo := mocks.NewMockCartRepository(ctrl)
 	mockStockRepo := mocks.NewMockStockRepository(ctrl)
+	mockProducer := mocks.NewMockProducerInterface(ctrl)
 
-	u := NewCartUsecase(mockCartRepo, mockStockRepo)
+	u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer)
 
 	ctx := context.Background()
 	userID := int64(1)
@@ -217,8 +219,9 @@ func TestCartUseCase_List(t *testing.T) {
 
 			mockCartRepo := mocks.NewMockCartRepository(ctrl)
 			mockStockRepo := mocks.NewMockStockRepository(ctrl)
+			mockProducer := mocks.NewMockProducerInterface(ctrl)
 
-			u := NewCartUsecase(mockCartRepo, mockStockRepo)
+			u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer)
 
 			tt.mockSetup(mockCartRepo, mockStockRepo)
 
@@ -250,8 +253,9 @@ func TestCartUseCase_Clear(t *testing.T) {
 
 	mockCartRepo := mocks.NewMockCartRepository(ctrl)
 	mockStockRepo := mocks.NewMockStockRepository(ctrl)
+	mockProducer := mocks.NewMockProducerInterface(ctrl)
 
-	u := NewCartUsecase(mockCartRepo, mockStockRepo)
+	u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer)
 
 	ctx := context.Background()
 	userID := int64(1)

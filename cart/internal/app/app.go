@@ -4,6 +4,7 @@ import (
 	"cart/internal/config"
 	"cart/internal/db"
 	"cart/internal/delivery"
+	"cart/internal/kafka"
 	"cart/internal/repository"
 	"cart/internal/stockclient"
 	"cart/internal/usecase"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	_ "github.com/lib/pq"
@@ -36,7 +38,25 @@ func Run(envFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create stock client: %w", err)
 	}
-	cartUseCase := usecase.NewCartUsecase(cartRepo, stockClient)
+
+	brokersEnv := os.Getenv("KAFKA_BROKERS")
+	if brokersEnv == "" {
+		return fmt.Errorf("KAFKA_BROKERS env var is not set")
+	}
+
+	brokers := strings.Split(brokersEnv, ",")
+
+	producerConfig := kafka.ProducerConfig{
+		Brokers: brokers,
+	}
+
+	producer, err := kafka.NewProducer(producerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kafka producer: %w", err)
+	}
+	defer producer.Close()
+
+	cartUseCase := usecase.NewCartUsecase(cartRepo, stockClient, producer)
 	handler := delivery.NewHandler(cartUseCase)
 
 	mux := http.NewServeMux()

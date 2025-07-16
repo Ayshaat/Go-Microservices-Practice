@@ -13,7 +13,6 @@ type Config struct {
 }
 
 func Load(envFile string) (*Config, error) {
-
 	brokersEnv := os.Getenv("KAFKA_BROKERS")
 	if brokersEnv == "" {
 		return nil, fmt.Errorf("KAFKA_BROKERS is required")
@@ -44,5 +43,6 @@ func splitAndTrim(s, sep string) []string {
 	for i := range parts {
 		parts[i] = strings.TrimSpace(parts[i])
 	}
+
 	return parts
 }

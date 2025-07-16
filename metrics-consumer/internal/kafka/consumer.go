@@ -34,6 +34,7 @@ func (c *Consumer) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.C
 		fmt.Printf("Message topic:%s partition:%d offset:%d\n", msg.Topic, msg.Partition, msg.Offset)
 
 		var event event.KafkaMessage
+
 		err := json.Unmarshal(msg.Value, &event)
 		if err != nil {
 			log.Printf("Error unmarshalling message: %v", err)

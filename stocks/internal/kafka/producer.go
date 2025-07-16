@@ -51,6 +51,7 @@ func (p *Producer) SendSKUCreated(sku string, price float64, count int) error {
 		Price: price,
 		Count: count,
 	}
+
 	return p.send("sku_created", payload)
 }
 
@@ -60,6 +61,7 @@ func (p *Producer) SendStockChanged(sku string, count int, price float64) error 
 		Count: count,
 		Price: price,
 	}
+
 	return p.send("stock_changed", payload)
 }
 
