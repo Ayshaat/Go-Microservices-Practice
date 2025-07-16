@@ -10,11 +10,8 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-<<<<<<< HEAD
 const maxProducerRetry = 5
 
-=======
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 type ProducerConfig struct {
 	Brokers   []string
 	Topic     string
@@ -31,15 +28,9 @@ type Producer struct {
 
 func NewProducer(cfg ProducerConfig) (*Producer, error) {
 	config := sarama.NewConfig()
-<<<<<<< HEAD
 	config.Producer.RequiredAcks = sarama.NoResponse
 	config.Producer.Return.Successes = true
 	config.Producer.Retry.Max = maxProducerRetry
-=======
-	config.Producer.RequiredAcks = sarama.WaitForAll
-	config.Producer.Return.Successes = true
-	config.Producer.Retry.Max = 5
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 
 	producer, err := sarama.NewSyncProducer(cfg.Brokers, config)
 	if err != nil {
@@ -60,10 +51,6 @@ func (p *Producer) SendSKUCreated(sku string, price float64, count int) error {
 		Price: price,
 		Count: count,
 	}
-<<<<<<< HEAD
-
-=======
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 	return p.send("sku_created", payload)
 }
 
@@ -73,10 +60,6 @@ func (p *Producer) SendStockChanged(sku string, count int, price float64) error 
 		Count: count,
 		Price: price,
 	}
-<<<<<<< HEAD
-
-=======
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 	return p.send("stock_changed", payload)
 }
 

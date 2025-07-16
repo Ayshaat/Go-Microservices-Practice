@@ -4,12 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-<<<<<<< HEAD
 
 	"github.com/ayshaat/metrics-consumer/internal/event"
-=======
-	"metrics-consumer/internal/event"
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 
 	"github.com/Shopify/sarama"
 )
@@ -38,15 +34,10 @@ func (c *Consumer) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.C
 		fmt.Printf("Message topic:%s partition:%d offset:%d\n", msg.Topic, msg.Partition, msg.Offset)
 
 		var event event.KafkaMessage
-<<<<<<< HEAD
-
-=======
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 		err := json.Unmarshal(msg.Value, &event)
 		if err != nil {
 			log.Printf("Error unmarshalling message: %v", err)
 			sess.MarkMessage(msg, "")
-<<<<<<< HEAD
 
 			continue
 		}
@@ -57,13 +48,6 @@ func (c *Consumer) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.C
 		} else {
 			fmt.Printf("Consumed event:\n%s\n\n", string(eventBytes))
 		}
-=======
-			continue
-		}
-
-		eventBytes, _ := json.MarshalIndent(event, "", "  ")
-		fmt.Printf("Consumed event:\n%s\n\n", string(eventBytes))
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 
 		sess.MarkMessage(msg, "")
 	}

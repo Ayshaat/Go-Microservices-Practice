@@ -13,9 +13,6 @@ FROM alpine:latest
 
 WORKDIR /root/
 COPY --from=builder /app/metrics-consumer .
-<<<<<<< HEAD
 COPY .env.docker .env
-=======
->>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 
 ENTRYPOINT ["./metrics-consumer"]
