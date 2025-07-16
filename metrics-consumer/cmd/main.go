@@ -7,10 +7,17 @@ import (
 	"os/signal"
 	"syscall"
 
+<<<<<<< HEAD
 	"github.com/ayshaat/metrics-consumer/internal/config"
 	"github.com/ayshaat/metrics-consumer/internal/kafka"
 
 	"github.com/Shopify/sarama"
+=======
+	"metrics-consumer/internal/config"
+	"metrics-consumer/internal/kafka"
+
+	"github.com/IBM/sarama"
+>>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 )
 
 func main() {
@@ -27,7 +34,10 @@ func main() {
 	consumer := kafka.NewConsumer()
 
 	ctx, cancel := context.WithCancel(context.Background())
+<<<<<<< HEAD
 
+=======
+>>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 	client, err := sarama.NewConsumerGroup(cfg.KafkaBrokers, cfg.ConsumerGroup, configSarama)
 	if err != nil {
 		log.Fatalf("Error creating consumer group client: %v", err)

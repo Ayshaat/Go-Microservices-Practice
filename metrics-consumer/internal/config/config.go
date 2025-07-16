@@ -29,7 +29,13 @@ func Load() (*Config, error) {
 	}
 
 	brokers := []string{}
+<<<<<<< HEAD
 	brokers = append(brokers, splitAndTrim(brokersEnv, ",")...)
+=======
+	for _, b := range splitAndTrim(brokersEnv, ",") {
+		brokers = append(brokers, b)
+	}
+>>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 
 	return &Config{
 		KafkaBrokers:  brokers,
@@ -43,6 +49,9 @@ func splitAndTrim(s, sep string) []string {
 	for i := range parts {
 		parts[i] = strings.TrimSpace(parts[i])
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> 06ad7f29756e466367a0284cadef04bc7c11f318
 	return parts
 }
