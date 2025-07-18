@@ -1,7 +1,7 @@
 
 services:
   cart:
-    image: ayshaat/cart:hw7
+    image: ayshaat/cart:hw9
     container_name: cart-service
     ports:
       - "8090:8090"
