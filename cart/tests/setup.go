@@ -15,6 +15,20 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type noopProducer struct{}
+
+func (n *noopProducer) SendCartItemAdded(cartId, sku string, count int, status string) error {
+	return nil
+}
+
+func (n *noopProducer) SendCartItemFailed(cartId, sku string, count int, status, reason string) error {
+	return nil
+}
+
+func (n *noopProducer) Close() error {
+	return nil
+}
+
 func skipIfNotIntegration(t *testing.T) {
 	if os.Getenv("INTEGRATION_TEST") != "1" {
 		t.Skip("Skipping integration test: INTEGRATION_TEST not set")
@@ -55,7 +69,9 @@ func setupServer(t *testing.T, db *sql.DB) http.Handler {
 		t.Fatalf("failed to create stock client: %v", err)
 	}
 
-	cartUsecase := usecase.NewCartUsecase(cartRepo, stockCli)
+	producer := &noopProducer{}
+
+	cartUsecase := usecase.NewCartUsecase(cartRepo, stockCli, producer)
 	handler := delivery.NewHandler(cartUsecase)
 
 	mux := http.NewServeMux()

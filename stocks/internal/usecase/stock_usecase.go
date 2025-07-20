@@ -3,7 +3,10 @@ package usecase
 import (
 	"context"
 	stdErrors "errors"
+	"fmt"
+	"log"
 	"stocks/internal/errors"
+	"stocks/internal/kafka"
 	"stocks/internal/models"
 	"stocks/internal/repository"
 
@@ -13,12 +16,14 @@ import (
 type stockUseCase struct {
 	repo      repository.StockRepository
 	txManager trm.Manager
+	producer  kafka.ProducerInterface
 }
 
-func NewStockUsecase(repo repository.StockRepository, txManager trm.Manager) StockUseCase {
+func NewStockUsecase(repo repository.StockRepository, txManager trm.Manager, producer kafka.ProducerInterface) StockUseCase {
 	return &stockUseCase{
 		repo:      repo,
 		txManager: txManager,
+		producer:  producer,
 	}
 }
 
@@ -35,7 +40,14 @@ func (u *stockUseCase) Add(ctx context.Context, item models.StockItem) error {
 				return err
 			}
 
-			return u.repo.InsertStockItem(ctx, item)
+			err = u.repo.InsertStockItem(ctx, item)
+			if err == nil {
+				if err := u.producer.SendSKUCreated(fmt.Sprint(item.SKU), item.Price, int(item.Count)); err != nil {
+					log.Printf("failed to send SKUCreated event: %v", err)
+				}
+			}
+
+			return err
 		}
 
 		if existingItem.UserID != item.UserID {
@@ -44,7 +56,14 @@ func (u *stockUseCase) Add(ctx context.Context, item models.StockItem) error {
 
 		existingItem.Count += item.Count
 
-		return u.repo.UpdateCount(ctx, existingItem.UserID, existingItem.SKU, existingItem.Count)
+		err = u.repo.UpdateCount(ctx, existingItem.UserID, existingItem.SKU, existingItem.Count)
+		if err == nil {
+			if err := u.producer.SendStockChanged(fmt.Sprint(existingItem.SKU), int(existingItem.Count), existingItem.Price); err != nil {
+				log.Printf("failed to send StockChanged event: %v", err)
+			}
+		}
+
+		return err
 	})
 }
 

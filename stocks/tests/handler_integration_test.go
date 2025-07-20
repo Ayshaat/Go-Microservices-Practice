@@ -7,15 +7,19 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	_ "github.com/lib/pq"
 )
 
 func TestIntegration_AddItem(t *testing.T) {
 	skipIfNotIntegration(t)
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	db := setupTestDB(t)
 
-	server := setupServer(t, db)
+	server := setupServer(t, db, ctrl)
 
 	defer db.Close()
 
@@ -84,10 +88,13 @@ func TestIntegration_AddItem(t *testing.T) {
 func TestIntegration_DeleteItem(t *testing.T) {
 	skipIfNotIntegration(t)
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	db := setupTestDB(t)
 	defer db.Close()
 
-	server := setupServer(t, db)
+	server := setupServer(t, db, ctrl)
 
 	tests := []struct {
 		name           string
@@ -174,10 +181,13 @@ func TestIntegration_DeleteItem(t *testing.T) {
 func TestIntegration_GetItem(t *testing.T) {
 	skipIfNotIntegration(t)
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	db := setupTestDB(t)
 	defer db.Close()
 
-	server := setupServer(t, db)
+	server := setupServer(t, db, ctrl)
 
 	tests := []struct {
 		name           string
@@ -272,10 +282,13 @@ func TestIntegration_GetItem(t *testing.T) {
 func TestIntegration_ListByLocation(t *testing.T) {
 	skipIfNotIntegration(t)
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	db := setupTestDB(t)
 	defer db.Close()
 
-	server := setupServer(t, db)
+	server := setupServer(t, db, ctrl)
 
 	tests := []struct {
 		name           string

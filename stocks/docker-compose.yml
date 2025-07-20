@@ -2,10 +2,10 @@ version: "3.8"
 
 services:
   stocks:
-    image: ayshaat/stocks:hw7
+    image: ayshaat/stocks:hw9
     container_name: stock-service
     depends_on:
-      postgres:
+      stock-postgres:
         condition: service_healthy
     ports:
       - "8081:8080"  
@@ -13,8 +13,9 @@ services:
       - ENV=production
     networks:
       - app-network
+      - shared-net
 
-  postgres:
+  stock-postgres:
     image: postgres:16
     container_name: stock-db
     restart: always
@@ -36,3 +37,6 @@ networks:
   app-network:
     external: true
     name: my-global-shared-network
+  shared-net:
+    external: true
+    name: shared-net

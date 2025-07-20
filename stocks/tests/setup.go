@@ -13,6 +13,10 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
+	mockKafka "stocks/internal/usecase/mocks"
+
+	"github.com/golang/mock/gomock"
+
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sql/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 
@@ -59,13 +63,14 @@ func setupTestDB(t *testing.T) *sqlx.DB {
 	return dbx
 }
 
-func setupServer(_ *testing.T, db *sqlx.DB) http.Handler {
+func setupServer(_ *testing.T, db *sqlx.DB, ctrl *gomock.Controller) http.Handler {
 	txFactory := trmsqlx.NewDefaultFactory(db.DB)
 	txManager := manager.Must(txFactory)
 	txCtxGetter := trmsqlx.DefaultCtxGetter
 
 	repo := repository.NewPostgresStockRepo(db, txCtxGetter)
-	useCase := usecase.NewStockUsecase(repo, txManager)
+	mockProducer := mockKafka.NewMockProducerInterface(ctrl)
+	useCase := usecase.NewStockUsecase(repo, txManager, mockProducer)
 	handler := delivery.NewHandler(useCase)
 
 	mux := http.NewServeMux()

@@ -1,7 +1,7 @@
 
 services:
   cart:
-    image: ayshaat/cart:hw7
+    image: ayshaat/cart:hw9
     container_name: cart-service
     ports:
       - "8090:8090"
@@ -9,11 +9,12 @@ services:
       - ENV=production
     networks:
       - app-network
+      - shared-net
     depends_on:
-      postgres:
+      cart-postgres:
         condition: service_healthy
 
-  postgres:
+  cart-postgres:
     image: postgres:16
     container_name: cart-db
     restart: always
@@ -35,3 +36,6 @@ networks:
   app-network:
     external: true
     name: my-global-shared-network
+  shared-net:
+    external: true
+    name: shared-net

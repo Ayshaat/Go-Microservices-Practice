@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
-	"github.com/pressly/goose/v3"
 	"log"
+
+	"github.com/pressly/goose/v3"
 
 	_ "github.com/lib/pq"
 )

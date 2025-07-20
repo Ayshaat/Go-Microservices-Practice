@@ -4,6 +4,7 @@ import (
 	"cart/internal/config"
 	"cart/internal/db"
 	"cart/internal/delivery"
+	"cart/internal/kafka"
 	"cart/internal/repository"
 	"cart/internal/stockclient"
 	"cart/internal/usecase"
@@ -36,7 +37,19 @@ func Run(envFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create stock client: %w", err)
 	}
-	cartUseCase := usecase.NewCartUsecase(cartRepo, stockClient)
+
+	producerConfig, err := kafka.NewProducerConfigFromEnv()
+	if err != nil {
+		return fmt.Errorf("failed to create kafka producer config: %w", err)
+	}
+
+	producer, err := kafka.NewProducer(producerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kafka producer: %w", err)
+	}
+	defer producer.Close()
+
+	cartUseCase := usecase.NewCartUsecase(cartRepo, stockClient, producer)
 	handler := delivery.NewHandler(cartUseCase)
 
 	mux := http.NewServeMux()

@@ -14,6 +14,7 @@ import (
 	"stocks/internal/config"
 	"stocks/internal/db"
 	"stocks/internal/delivery"
+	"stocks/internal/kafka"
 	"stocks/internal/repository"
 	"stocks/internal/usecase"
 
@@ -44,7 +45,24 @@ func Run(envFile string) error {
 	txCtxGetter := trmsqlx.DefaultCtxGetter
 
 	repo := repository.NewPostgresStockRepo(dbx, txCtxGetter)
-	useCase := usecase.NewStockUsecase(repo, txManager)
+
+	producerConfig, err := kafka.NewProducerConfigFromEnv()
+	if err != nil {
+		return fmt.Errorf("failed to create kafka producer config: %w", err)
+	}
+
+	producer, err := kafka.NewProducer(producerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kafka producer: %w", err)
+	}
+
+	defer func() {
+		if err := producer.Close(); err != nil {
+			log.Printf("failed to close kafka producer: %v", err)
+		}
+	}()
+
+	useCase := usecase.NewStockUsecase(repo, txManager, producer)
 	handler := delivery.NewHandler(useCase)
 
 	mux := http.NewServeMux()
