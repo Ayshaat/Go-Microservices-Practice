@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package stock;
+
+option go_package = "pkg/api/stockpb";
+
+import "google/api/annotations.proto";
+
+service StockService {
+  rpc AddItem(AddItemRequest) returns (StockResponse) {
+    option (google.api.http) = {
+      post: "/stocks/item/add"
+      body: "*"
+    };
+  }
+
+  rpc DeleteItem(DeleteItemRequest) returns (StockResponse) {
+    option (google.api.http) = {
+      delete: "/stocks/item/delete"
+    };
+  }
+
+  rpc GetItem(GetItemRequest) returns (StockItem) {
+    option (google.api.http) = {
+      get: "/stocks/item/get"
+    };
+  }
+
+  rpc ListByLocation(ListByLocationRequest) returns (ListByLocationResponse) {
+    option (google.api.http) = {
+      get: "/stocks/list/location"
+    };
+  }
+}
+
+message AddItemRequest {
+  string sku = 1;
+  string location = 2;
+  int32 count = 3;
+}
+
+message DeleteItemRequest {
+  string sku = 1;
+  string location = 2;
+}
+
+message GetItemRequest {
+  string sku = 1;
+  string location = 2;
+}
+
+message ListByLocationRequest {
+  string location = 1;
+}
+
+message StockItem {
+  string sku = 1;
+  string location = 2;
+  int32 count = 3;
+}
+
+message StockResponse {
+  string message = 1;
+}
+
+message ListByLocationResponse {
+  string location = 1;
+  repeated StockItem items = 2;
+}
