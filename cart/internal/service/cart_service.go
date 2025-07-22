@@ -6,9 +6,8 @@ import (
 	"log"
 	"strconv"
 
-	"cart/internal/models"
 	"cart/internal/usecase"
-	cartpb "cart/pkg/api"
+	cartpb "cart/pkg/api/cart"
 )
 
 type cartServer struct {
@@ -23,21 +22,9 @@ func NewCartServer(useCase usecase.CartUseCase) cartpb.CartServiceServer {
 func (s *cartServer) AddItem(ctx context.Context, req *cartpb.AddItemRequest) (*cartpb.CartResponse, error) {
 	log.Printf("AddItem called: %+v", req)
 
-	userID, err := strconv.ParseInt(req.UserId, 10, 64)
+	item, err := CartItemFromAddRequest(req)
 	if err != nil {
-		return nil, fmt.Errorf("invalid user_id: %w", err)
-	}
-
-	skuUint64, err := strconv.ParseUint(req.Sku, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid sku: %w", err)
-	}
-	sku := uint32(skuUint64)
-
-	item := models.CartItem{
-		UserID: userID,
-		SKU:    sku,
-		Count:  int16(req.Count),
+		return nil, err
 	}
 
 	err = s.useCase.Add(ctx, item)
@@ -51,16 +38,15 @@ func (s *cartServer) AddItem(ctx context.Context, req *cartpb.AddItemRequest) (*
 func (s *cartServer) DeleteItem(ctx context.Context, req *cartpb.DeleteItemRequest) (*cartpb.CartResponse, error) {
 	log.Printf("DeleteItem called: %+v", req)
 
-	userID, err := strconv.ParseInt(req.UserId, 10, 64)
+	userID, err := ParseUserID(req.UserId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid user_id: %w", err)
+		return nil, err
 	}
 
-	skuUint64, err := strconv.ParseUint(req.Sku, 10, 32)
+	sku, err := ParseSKU(req.Sku)
 	if err != nil {
-		return nil, fmt.Errorf("invalid sku: %w", err)
+		return nil, err
 	}
-	sku := uint32(skuUint64)
 
 	err = s.useCase.Delete(ctx, userID, sku)
 	if err != nil {
@@ -73,7 +59,7 @@ func (s *cartServer) DeleteItem(ctx context.Context, req *cartpb.DeleteItemReque
 func (s *cartServer) ClearCart(ctx context.Context, req *cartpb.ClearCartRequest) (*cartpb.CartResponse, error) {
 	log.Printf("ClearCart called: %+v", req)
 
-	userID, err := strconv.ParseInt(req.UserId, 10, 64)
+	userID, err := ParseUserID(req.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("invalid user_id: %w", err)
 	}
@@ -89,7 +75,7 @@ func (s *cartServer) ClearCart(ctx context.Context, req *cartpb.ClearCartRequest
 func (s *cartServer) ListCart(ctx context.Context, req *cartpb.ListCartRequest) (*cartpb.ListCartResponse, error) {
 	log.Printf("ListCart called: %+v", req)
 
-	userID, err := strconv.ParseInt(req.UserId, 10, 64)
+	userID, err := ParseUserID(req.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("invalid user_id: %w", err)
 	}
@@ -102,7 +88,7 @@ func (s *cartServer) ListCart(ctx context.Context, req *cartpb.ListCartRequest) 
 	var cartItems []*cartpb.CartItem
 	for _, item := range items {
 		cartItems = append(cartItems, &cartpb.CartItem{
-			Sku:   strconv.FormatUint(uint64(item.SKU), 10), // convert uint32 -> string
+			Sku:   strconv.FormatUint(uint64(item.SKU), 10),
 			Count: int32(item.Count),
 		})
 	}

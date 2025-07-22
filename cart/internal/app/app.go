@@ -3,21 +3,23 @@ package app
 import (
 	"cart/internal/config"
 	"cart/internal/db"
-	"cart/internal/delivery"
 	"cart/internal/kafka"
 	"cart/internal/repository"
+	"cart/internal/server"
 	"cart/internal/stockclient"
 	"cart/internal/usecase"
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	_ "github.com/lib/pq"
 )
+
+const serverCount = 3
 
 func Run(envFile string) error {
 	cfg, err := config.Load(envFile)
@@ -50,45 +52,44 @@ func Run(envFile string) error {
 	defer producer.Close()
 
 	cartUseCase := usecase.NewCartUsecase(cartRepo, stockClient, producer)
-	handler := delivery.NewHandler(cartUseCase)
 
-	mux := http.NewServeMux()
-	handler.RegisterRoutes(mux)
-
-	port := os.Getenv("HTTP_PORT")
-	if port == "" {
-		port = "8090"
-	}
-
-	srv := &http.Server{
-		Addr:         ":" + port,
-		Handler:      mux,
-		ReadTimeout:  config.ReadTimeout,
-		WriteTimeout: config.WriteTimeout,
-		IdleTimeout:  config.IdleTimeout,
-	}
-
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		log.Println("Starting cart server on port", port)
-
-		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("server failed: %v", err)
-		}
-	}()
-
-	<-stop
-
-	log.Println("Shutting down cart server...")
+	errCh := make(chan error, serverCount)
 
 	ctx, cancel := context.WithTimeout(context.Background(), config.WriteTimeout)
 	defer cancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
-		return fmt.Errorf("server shutdown failed: %w", err)
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	var wg sync.WaitGroup
+	wg.Add(serverCount)
+
+	go func() {
+		defer wg.Done()
+		log.Println("Starting gRPC server on port", cfg.GRPCPort)
+
+		if err := server.StartGRPCServer(ctx, cfg, cartUseCase); err != nil {
+			errCh <- fmt.Errorf("gRPC server failed: %w", err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		log.Println("Starting gRPC-Gateway server on port", cfg.HTTPPort)
+
+		if err := server.StartGatewayServer(ctx, cfg, cartUseCase); err != nil {
+			errCh <- fmt.Errorf("gateway server failed: %w", err)
+		}
+	}()
+
+	select {
+	case <-stop:
+		log.Println("Shutdown signal received")
+	case err := <-errCh:
+		return err
 	}
+
+	log.Println("Shutting down servers...")
 
 	log.Println("Server gracefully stopped")
 

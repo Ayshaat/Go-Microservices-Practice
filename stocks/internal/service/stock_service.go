@@ -11,6 +11,11 @@ import (
 	stockpb "stocks/pkg/api"
 )
 
+const (
+	defaultPageSize   = 100
+	defaultPageNumber = 1
+)
+
 type StockServer struct {
 	stockpb.UnimplementedStockServiceServer
 	usecase usecase.StockUseCase
@@ -96,11 +101,6 @@ func (s *StockServer) ListByLocation(ctx context.Context, req *stockpb.ListByLoc
 	if req.GetLocation() == "" {
 		return nil, fmt.Errorf("invalid input: location must be non-empty")
 	}
-
-	const (
-		defaultPageSize   = 100
-		defaultPageNumber = 1
-	)
 
 	items, err := s.usecase.ListByLocation(ctx, req.GetLocation(), defaultPageSize, defaultPageNumber)
 	if err != nil {
