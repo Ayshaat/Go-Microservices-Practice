@@ -1,12 +1,11 @@
 package delivery_test
 
 import (
-	"bytes"
+	"context"
 	stdErr "errors"
-	"net/http"
-	"net/http/httptest"
 	"stocks/internal/delivery"
 	"stocks/internal/usecase/mocks"
+	stockspb "stocks/pkg/api"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -20,40 +19,35 @@ func TestHandler_DeleteItem(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockStockUseCase(ctrl)
-	handler := delivery.NewHandler(mockUsecase)
+	server := delivery.NewStockServer(mockUsecase)
 
-	validJSON := []byte(`{"userID":1,"sku":1001}`)
+	validReq := &stockspb.DeleteItemRequest{
+		Sku:      "1001",
+		Location: "warehouse1",
+	}
 
 	tests := []struct {
 		name           string
-		body           []byte
+		req            *stockspb.DeleteItemRequest
 		mockSetup      func()
-		wantStatusCode int
-		wantBody       string
+		expectedResult *stockspb.StockResponse
+		expectedErr    string
 	}{
 		{
-			name:           "invalid JSON",
-			body:           []byte(`invalid json`),
-			mockSetup:      func() {},
-			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "Invalid request\n",
-		},
-		{
 			name: "success",
-			body: validJSON,
+			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Delete(gomock.Any(), uint32(1001)).Return(nil)
 			},
-			wantStatusCode: http.StatusOK,
+			expectedResult: &stockspb.StockResponse{Message: "Item deleted successfully"},
 		},
 		{
 			name: "internal error from usecase",
-			body: validJSON,
+			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Delete(gomock.Any(), uint32(1001)).Return(stdErr.New("db error"))
 			},
-			wantStatusCode: http.StatusInternalServerError,
-			wantBody:       "db error\n",
+			expectedErr: "db error",
 		},
 	}
 
@@ -61,15 +55,15 @@ func TestHandler_DeleteItem(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
 
-			req := httptest.NewRequest(http.MethodPost, "/delete", bytes.NewReader(tt.body))
-			rr := httptest.NewRecorder()
+			resp, err := server.DeleteItem(context.Background(), tt.req)
 
-			handler.DeleteItem(rr, req)
-
-			assert.Equal(t, tt.wantStatusCode, rr.Code)
-
-			if tt.wantBody != "" {
-				assert.Equal(t, tt.wantBody, rr.Body.String())
+			if tt.expectedErr != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErr)
+				assert.Nil(t, resp)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, resp)
 			}
 		})
 	}

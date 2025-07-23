@@ -24,6 +24,18 @@ const (
 	idleTimeout  = 120 * time.Second
 )
 
+func NewGatewayMux(ctx context.Context, cfg *config.Config, cartUC usecase.CartUseCase) (http.Handler, error) {
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+
+	mux := runtime.NewServeMux()
+	err := cartpb.RegisterCartServiceHandlerFromEndpoint(ctx, mux, cfg.GRPCEndpoint, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to register gateway: %w", err)
+	}
+
+	return mux, nil
+}
+
 func StartGatewayServer(ctx context.Context, cfg *config.Config, cartUC usecase.CartUseCase) error {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 

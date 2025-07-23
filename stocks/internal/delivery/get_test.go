@@ -1,13 +1,12 @@
 package delivery_test
 
 import (
-	"bytes"
+	"context"
 	"errors"
-	"net/http"
-	"net/http/httptest"
 	"stocks/internal/delivery"
 	"stocks/internal/models"
 	"stocks/internal/usecase/mocks"
+	stockspb "stocks/pkg/api"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -21,9 +20,13 @@ func TestHandler_GetItem(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockStockUseCase(ctrl)
-	handler := delivery.NewHandler(mockUsecase)
+	server := delivery.NewStockServer(mockUsecase)
 
-	validJSON := []byte(`{"sku":1001}`)
+	validReq := &stockspb.GetItemRequest{
+		Sku:      "1001",
+		Location: "loc1",
+	}
+
 	expectedItem := models.StockItem{
 		UserID:   1,
 		SKU:      1001,
@@ -36,49 +39,42 @@ func TestHandler_GetItem(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		method         string
-		body           []byte
+		req            *stockspb.GetItemRequest
 		mockSetup      func()
-		wantStatusCode int
-		wantContains   string
+		expectedResult *stockspb.StockItem
+		expectedErr    string
 	}{
 		{
-			name:           "method not allowed",
-			method:         http.MethodGet,
-			body:           nil,
-			mockSetup:      func() {},
-			wantStatusCode: http.StatusMethodNotAllowed,
-			wantContains:   "method not allowed",
-		},
-		{
-			name:           "invalid JSON",
-			method:         http.MethodPost,
-			body:           []byte(`invalid`),
-			mockSetup:      func() {},
-			wantStatusCode: http.StatusBadRequest,
-			wantContains:   "invalid request body",
-		},
-		{
-			name:   "not found",
-			method: http.MethodPost,
-			body:   validJSON,
+			name: "not found",
+			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().GetBySKU(gomock.Any(), uint32(1001)).
 					Return(models.StockItem{}, errors.New("not found"))
 			},
-			wantStatusCode: http.StatusNotFound,
-			wantContains:   "not found",
+			expectedErr: "not found",
 		},
 		{
-			name:   "success",
-			method: http.MethodPost,
-			body:   validJSON,
+			name: "success",
+			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().GetBySKU(gomock.Any(), uint32(1001)).
 					Return(expectedItem, nil)
 			},
-			wantStatusCode: http.StatusOK,
-			wantContains:   `"SKU":1001`,
+			expectedResult: &stockspb.StockItem{
+				Sku:      "1001",
+				Location: "loc1",
+				Count:    int32(expectedItem.Count),
+			},
+		},
+		{
+			name: "internal error",
+			req:  validReq,
+			mockSetup: func() {
+				mockUsecase.EXPECT().
+					GetBySKU(gomock.Any(), uint32(1001)).
+					Return(models.StockItem{}, nil)
+			},
+			expectedErr: "db error",
 		},
 	}
 
@@ -86,15 +82,15 @@ func TestHandler_GetItem(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
 
-			req := httptest.NewRequest(tt.method, "/stocks/item/get", bytes.NewReader(tt.body))
-			rr := httptest.NewRecorder()
+			resp, err := server.GetItem(context.Background(), tt.req)
 
-			handler.GetItem(rr, req)
-
-			assert.Equal(t, tt.wantStatusCode, rr.Code)
-
-			if tt.wantContains != "" {
-				assert.Contains(t, rr.Body.String(), tt.wantContains)
+			if tt.expectedErr != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErr)
+				assert.Nil(t, resp)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, resp)
 			}
 		})
 	}

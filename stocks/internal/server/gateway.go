@@ -24,6 +24,19 @@ const (
 	readHeaderTimeout = 5 * time.Second
 )
 
+func NewGatewayMux(ctx context.Context, cfg *config.Config, useCase usecase.StockUseCase) (http.Handler, error) {
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+
+	mux := runtime.NewServeMux()
+
+	err := stockpb.RegisterStockServiceHandlerFromEndpoint(ctx, mux, cfg.GRPCPort, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to register gateway: %w", err)
+	}
+
+	return mux, nil
+}
+
 func StartGatewayServer(ctx context.Context, cfg *config.Config, stockUC usecase.StockUseCase) error {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 

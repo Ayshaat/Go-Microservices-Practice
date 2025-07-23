@@ -10,8 +10,9 @@ import (
 	"cart/internal/usecase"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
-	service "cart/internal/service"
+	service "cart/internal/delivery"
 	cartpb "cart/pkg/api/cart"
 )
 
@@ -24,6 +25,8 @@ func StartGRPCServer(ctx context.Context, cfg *config.Config, cartUC usecase.Car
 	grpcServer := grpc.NewServer()
 
 	cartpb.RegisterCartServiceServer(grpcServer, service.NewCartServer(cartUC))
+
+	reflection.Register(grpcServer)
 
 	log.Printf("gRPC server is running on %s...", cfg.GRPCPort)
 

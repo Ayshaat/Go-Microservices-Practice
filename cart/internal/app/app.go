@@ -35,7 +35,7 @@ func Run(envFile string) error {
 
 	cartRepo := repository.NewPostgresCartRepo(database)
 
-	stockClient, err := stockclient.New(os.Getenv("STOCK_SERVICE_URL"))
+	stockClient, err := stockclient.NewGRPCClient(os.Getenv("STOCK_SERVICE_URL"))
 	if err != nil {
 		return fmt.Errorf("failed to create stock client: %w", err)
 	}
