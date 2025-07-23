@@ -9,7 +9,7 @@ import (
 	"stocks/internal/config"
 	service "stocks/internal/delivery"
 	"stocks/internal/usecase"
-	stockpb "stocks/pkg/api"
+	stockpb "stocks/pkg/api/stocks"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"

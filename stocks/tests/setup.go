@@ -8,18 +8,11 @@ import (
 	"context"
 	"stocks/internal/config"
 	"stocks/internal/db"
-	"stocks/internal/repository"
 	"stocks/internal/server"
-	"stocks/internal/usecase"
 
 	"github.com/jmoiron/sqlx"
 
-	mockKafka "stocks/internal/usecase/mocks"
-
 	"github.com/golang/mock/gomock"
-
-	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sql/v2"
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 
 	_ "github.com/lib/pq"
 )
@@ -70,19 +63,11 @@ func setupTestDB(t *testing.T) *sqlx.DB {
 }
 
 func setupServer(t *testing.T, db *sqlx.DB, ctrl *gomock.Controller) http.Handler {
-	txFactory := trmsqlx.NewDefaultFactory(db.DB)
-	txManager := manager.Must(txFactory)
-	txCtxGetter := trmsqlx.DefaultCtxGetter
-
-	repo := repository.NewPostgresStockRepo(db, txCtxGetter)
-	mockProducer := mockKafka.NewMockProducerInterface(ctrl)
-	useCase := usecase.NewStockUsecase(repo, txManager, mockProducer)
-
 	cfg := mustLoadConfig(t)
 
 	ctx := context.Background()
 
-	mux, err := server.NewGatewayMux(ctx, cfg, useCase)
+	mux, err := server.NewGatewayMux(ctx, cfg)
 	if err != nil {
 		t.Fatalf("failed to create gateway mux: %v", err)
 	}

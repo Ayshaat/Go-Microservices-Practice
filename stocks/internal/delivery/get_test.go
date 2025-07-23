@@ -6,7 +6,7 @@ import (
 	"stocks/internal/delivery"
 	"stocks/internal/models"
 	"stocks/internal/usecase/mocks"
-	stockspb "stocks/pkg/api"
+	stockspb "stocks/pkg/api/stocks"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -72,7 +72,7 @@ func TestHandler_GetItem(t *testing.T) {
 			mockSetup: func() {
 				mockUsecase.EXPECT().
 					GetBySKU(gomock.Any(), uint32(1001)).
-					Return(models.StockItem{}, nil)
+					Return(models.StockItem{}, errors.New("db error"))
 			},
 			expectedErr: "db error",
 		},

@@ -2,17 +2,18 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v6.31.1
-// source: service.proto
+// source: stocks/stocks.proto
 
 package stockpb
 
 import (
-	_ "google.golang.org/genproto/googleapis/api/annotations"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	_ "google.golang.org/genproto/googleapis/api/annotations"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -27,13 +28,14 @@ type AddItemRequest struct {
 	Sku           string                 `protobuf:"bytes,1,opt,name=sku,proto3" json:"sku,omitempty"`
 	Location      string                 `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
 	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
+	UserId        uint64                 `protobuf:"varint,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AddItemRequest) Reset() {
 	*x = AddItemRequest{}
-	mi := &file_service_proto_msgTypes[0]
+	mi := &file_stocks_stocks_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +47,7 @@ func (x *AddItemRequest) String() string {
 func (*AddItemRequest) ProtoMessage() {}
 
 func (x *AddItemRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[0]
+	mi := &file_stocks_stocks_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +60,7 @@ func (x *AddItemRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddItemRequest.ProtoReflect.Descriptor instead.
 func (*AddItemRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{0}
+	return file_stocks_stocks_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *AddItemRequest) GetSku() string {
@@ -82,17 +84,25 @@ func (x *AddItemRequest) GetCount() int32 {
 	return 0
 }
 
+func (x *AddItemRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 type DeleteItemRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sku           string                 `protobuf:"bytes,1,opt,name=sku,proto3" json:"sku,omitempty"`
 	Location      string                 `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
+	UserId        uint64                 `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DeleteItemRequest) Reset() {
 	*x = DeleteItemRequest{}
-	mi := &file_service_proto_msgTypes[1]
+	mi := &file_stocks_stocks_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -104,7 +114,7 @@ func (x *DeleteItemRequest) String() string {
 func (*DeleteItemRequest) ProtoMessage() {}
 
 func (x *DeleteItemRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[1]
+	mi := &file_stocks_stocks_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -117,7 +127,7 @@ func (x *DeleteItemRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteItemRequest.ProtoReflect.Descriptor instead.
 func (*DeleteItemRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{1}
+	return file_stocks_stocks_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *DeleteItemRequest) GetSku() string {
@@ -134,17 +144,25 @@ func (x *DeleteItemRequest) GetLocation() string {
 	return ""
 }
 
+func (x *DeleteItemRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 type GetItemRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sku           string                 `protobuf:"bytes,1,opt,name=sku,proto3" json:"sku,omitempty"`
 	Location      string                 `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
+	UserId        uint64                 `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetItemRequest) Reset() {
 	*x = GetItemRequest{}
-	mi := &file_service_proto_msgTypes[2]
+	mi := &file_stocks_stocks_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -156,7 +174,7 @@ func (x *GetItemRequest) String() string {
 func (*GetItemRequest) ProtoMessage() {}
 
 func (x *GetItemRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[2]
+	mi := &file_stocks_stocks_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -169,7 +187,7 @@ func (x *GetItemRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetItemRequest.ProtoReflect.Descriptor instead.
 func (*GetItemRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{2}
+	return file_stocks_stocks_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetItemRequest) GetSku() string {
@@ -186,16 +204,24 @@ func (x *GetItemRequest) GetLocation() string {
 	return ""
 }
 
+func (x *GetItemRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 type ListByLocationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Location      string                 `protobuf:"bytes,1,opt,name=location,proto3" json:"location,omitempty"`
+	UserId        uint64                 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListByLocationRequest) Reset() {
 	*x = ListByLocationRequest{}
-	mi := &file_service_proto_msgTypes[3]
+	mi := &file_stocks_stocks_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -207,7 +233,7 @@ func (x *ListByLocationRequest) String() string {
 func (*ListByLocationRequest) ProtoMessage() {}
 
 func (x *ListByLocationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[3]
+	mi := &file_stocks_stocks_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -220,7 +246,7 @@ func (x *ListByLocationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListByLocationRequest.ProtoReflect.Descriptor instead.
 func (*ListByLocationRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{3}
+	return file_stocks_stocks_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ListByLocationRequest) GetLocation() string {
@@ -230,18 +256,26 @@ func (x *ListByLocationRequest) GetLocation() string {
 	return ""
 }
 
+func (x *ListByLocationRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 type StockItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sku           string                 `protobuf:"bytes,1,opt,name=sku,proto3" json:"sku,omitempty"`
 	Location      string                 `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
 	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
+	UserId        uint64                 `protobuf:"varint,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StockItem) Reset() {
 	*x = StockItem{}
-	mi := &file_service_proto_msgTypes[4]
+	mi := &file_stocks_stocks_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -253,7 +287,7 @@ func (x *StockItem) String() string {
 func (*StockItem) ProtoMessage() {}
 
 func (x *StockItem) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[4]
+	mi := &file_stocks_stocks_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -266,7 +300,7 @@ func (x *StockItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StockItem.ProtoReflect.Descriptor instead.
 func (*StockItem) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{4}
+	return file_stocks_stocks_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *StockItem) GetSku() string {
@@ -290,6 +324,13 @@ func (x *StockItem) GetCount() int32 {
 	return 0
 }
 
+func (x *StockItem) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 type StockResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
@@ -299,7 +340,7 @@ type StockResponse struct {
 
 func (x *StockResponse) Reset() {
 	*x = StockResponse{}
-	mi := &file_service_proto_msgTypes[5]
+	mi := &file_stocks_stocks_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -311,7 +352,7 @@ func (x *StockResponse) String() string {
 func (*StockResponse) ProtoMessage() {}
 
 func (x *StockResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[5]
+	mi := &file_stocks_stocks_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -324,7 +365,7 @@ func (x *StockResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StockResponse.ProtoReflect.Descriptor instead.
 func (*StockResponse) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{5}
+	return file_stocks_stocks_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *StockResponse) GetMessage() string {
@@ -338,13 +379,14 @@ type ListByLocationResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Location      string                 `protobuf:"bytes,1,opt,name=location,proto3" json:"location,omitempty"`
 	Items         []*StockItem           `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
+	UserId        uint64                 `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListByLocationResponse) Reset() {
 	*x = ListByLocationResponse{}
-	mi := &file_service_proto_msgTypes[6]
+	mi := &file_stocks_stocks_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -356,7 +398,7 @@ func (x *ListByLocationResponse) String() string {
 func (*ListByLocationResponse) ProtoMessage() {}
 
 func (x *ListByLocationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[6]
+	mi := &file_stocks_stocks_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -369,7 +411,7 @@ func (x *ListByLocationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListByLocationResponse.ProtoReflect.Descriptor instead.
 func (*ListByLocationResponse) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{6}
+	return file_stocks_stocks_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListByLocationResponse) GetLocation() string {
@@ -386,32 +428,45 @@ func (x *ListByLocationResponse) GetItems() []*StockItem {
 	return nil
 }
 
-var File_service_proto protoreflect.FileDescriptor
+func (x *ListByLocationResponse) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
 
-const file_service_proto_rawDesc = "" +
+var File_stocks_stocks_proto protoreflect.FileDescriptor
+
+const file_stocks_stocks_proto_rawDesc = "" +
 	"\n" +
-	"\rservice.proto\x12\x05stock\x1a\x1cgoogle/api/annotations.proto\"T\n" +
+	"\x13stocks/stocks.proto\x12\x05stock\x1a\x1cgoogle/api/annotations.proto\"m\n" +
 	"\x0eAddItemRequest\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
 	"\blocation\x18\x02 \x01(\tR\blocation\x12\x14\n" +
-	"\x05count\x18\x03 \x01(\x05R\x05count\"A\n" +
+	"\x05count\x18\x03 \x01(\x05R\x05count\x12\x17\n" +
+	"\auser_id\x18\x04 \x01(\x04R\x06userId\"Z\n" +
 	"\x11DeleteItemRequest\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
-	"\blocation\x18\x02 \x01(\tR\blocation\">\n" +
+	"\blocation\x18\x02 \x01(\tR\blocation\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x04R\x06userId\"W\n" +
 	"\x0eGetItemRequest\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
-	"\blocation\x18\x02 \x01(\tR\blocation\"3\n" +
+	"\blocation\x18\x02 \x01(\tR\blocation\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x04R\x06userId\"L\n" +
 	"\x15ListByLocationRequest\x12\x1a\n" +
-	"\blocation\x18\x01 \x01(\tR\blocation\"O\n" +
+	"\blocation\x18\x01 \x01(\tR\blocation\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x04R\x06userId\"h\n" +
 	"\tStockItem\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
 	"\blocation\x18\x02 \x01(\tR\blocation\x12\x14\n" +
-	"\x05count\x18\x03 \x01(\x05R\x05count\")\n" +
+	"\x05count\x18\x03 \x01(\x05R\x05count\x12\x17\n" +
+	"\auser_id\x18\x04 \x01(\x04R\x06userId\")\n" +
 	"\rStockResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"\\\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"u\n" +
 	"\x16ListByLocationResponse\x12\x1a\n" +
 	"\blocation\x18\x01 \x01(\tR\blocation\x12&\n" +
-	"\x05items\x18\x02 \x03(\v2\x10.stock.StockItemR\x05items2\xfa\x02\n" +
+	"\x05items\x18\x02 \x03(\v2\x10.stock.StockItemR\x05items\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x04R\x06userId2\xfa\x02\n" +
 	"\fStockService\x12S\n" +
 	"\aAddItem\x12\x15.stock.AddItemRequest\x1a\x14.stock.StockResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/stocks/item/add\x12Y\n" +
 	"\n" +
@@ -420,19 +475,19 @@ const file_service_proto_rawDesc = "" +
 	"\x0eListByLocation\x12\x1c.stock.ListByLocationRequest\x1a\x1d.stock.ListByLocationResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/stocks/list/locationB\x11Z\x0fpkg/api/stockpbb\x06proto3"
 
 var (
-	file_service_proto_rawDescOnce sync.Once
-	file_service_proto_rawDescData []byte
+	file_stocks_stocks_proto_rawDescOnce sync.Once
+	file_stocks_stocks_proto_rawDescData []byte
 )
 
-func file_service_proto_rawDescGZIP() []byte {
-	file_service_proto_rawDescOnce.Do(func() {
-		file_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_service_proto_rawDesc), len(file_service_proto_rawDesc)))
+func file_stocks_stocks_proto_rawDescGZIP() []byte {
+	file_stocks_stocks_proto_rawDescOnce.Do(func() {
+		file_stocks_stocks_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_stocks_stocks_proto_rawDesc), len(file_stocks_stocks_proto_rawDesc)))
 	})
-	return file_service_proto_rawDescData
+	return file_stocks_stocks_proto_rawDescData
 }
 
-var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
-var file_service_proto_goTypes = []any{
+var file_stocks_stocks_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_stocks_stocks_proto_goTypes = []any{
 	(*AddItemRequest)(nil),         // 0: stock.AddItemRequest
 	(*DeleteItemRequest)(nil),      // 1: stock.DeleteItemRequest
 	(*GetItemRequest)(nil),         // 2: stock.GetItemRequest
@@ -441,7 +496,7 @@ var file_service_proto_goTypes = []any{
 	(*StockResponse)(nil),          // 5: stock.StockResponse
 	(*ListByLocationResponse)(nil), // 6: stock.ListByLocationResponse
 }
-var file_service_proto_depIdxs = []int32{
+var file_stocks_stocks_proto_depIdxs = []int32{
 	4, // 0: stock.ListByLocationResponse.items:type_name -> stock.StockItem
 	0, // 1: stock.StockService.AddItem:input_type -> stock.AddItemRequest
 	1, // 2: stock.StockService.DeleteItem:input_type -> stock.DeleteItemRequest
@@ -458,26 +513,26 @@ var file_service_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_service_proto_init() }
-func file_service_proto_init() {
-	if File_service_proto != nil {
+func init() { file_stocks_stocks_proto_init() }
+func file_stocks_stocks_proto_init() {
+	if File_stocks_stocks_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_service_proto_rawDesc), len(file_service_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_stocks_stocks_proto_rawDesc), len(file_stocks_stocks_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_service_proto_goTypes,
-		DependencyIndexes: file_service_proto_depIdxs,
-		MessageInfos:      file_service_proto_msgTypes,
+		GoTypes:           file_stocks_stocks_proto_goTypes,
+		DependencyIndexes: file_stocks_stocks_proto_depIdxs,
+		MessageInfos:      file_stocks_stocks_proto_msgTypes,
 	}.Build()
-	File_service_proto = out.File
-	file_service_proto_goTypes = nil
-	file_service_proto_depIdxs = nil
+	File_stocks_stocks_proto = out.File
+	file_stocks_stocks_proto_goTypes = nil
+	file_stocks_stocks_proto_depIdxs = nil
 }

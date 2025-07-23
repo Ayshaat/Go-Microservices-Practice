@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"stocks/internal/models"
-	stockpb "stocks/pkg/api"
+	stockpb "stocks/pkg/api/stocks"
 )
 
 func ParseSKU(sku string) (uint32, error) {

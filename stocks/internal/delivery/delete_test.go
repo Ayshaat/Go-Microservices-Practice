@@ -5,7 +5,7 @@ import (
 	stdErr "errors"
 	"stocks/internal/delivery"
 	"stocks/internal/usecase/mocks"
-	stockspb "stocks/pkg/api"
+	stockspb "stocks/pkg/api/stocks"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -47,7 +47,7 @@ func TestHandler_DeleteItem(t *testing.T) {
 			mockSetup: func() {
 				mockUsecase.EXPECT().Delete(gomock.Any(), uint32(1001)).Return(stdErr.New("db error"))
 			},
-			expectedErr: "db error",
+			expectedErr: "failed to delete item",
 		},
 	}
 

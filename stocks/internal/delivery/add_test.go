@@ -8,7 +8,7 @@ import (
 	"stocks/internal/delivery"
 	"stocks/internal/errors"
 	"stocks/internal/usecase/mocks"
-	stockspb "stocks/pkg/api"
+	stockspb "stocks/pkg/api/stocks"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

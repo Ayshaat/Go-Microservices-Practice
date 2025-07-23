@@ -93,6 +93,10 @@ func (s *cartServer) ListCart(ctx context.Context, req *cartpb.ListCartRequest) 
 		})
 	}
 
+	if cartItems == nil {
+		cartItems = []*cartpb.CartItem{}
+	}
+
 	return &cartpb.ListCartResponse{
 		UserId: req.UserId,
 		Items:  cartItems,

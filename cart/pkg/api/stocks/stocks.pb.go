@@ -28,6 +28,7 @@ type AddItemRequest struct {
 	Sku           string                 `protobuf:"bytes,1,opt,name=sku,proto3" json:"sku,omitempty"`
 	Location      string                 `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
 	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
+	UserId        uint64                 `protobuf:"varint,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -83,10 +84,18 @@ func (x *AddItemRequest) GetCount() int32 {
 	return 0
 }
 
+func (x *AddItemRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 type DeleteItemRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sku           string                 `protobuf:"bytes,1,opt,name=sku,proto3" json:"sku,omitempty"`
 	Location      string                 `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
+	UserId        uint64                 `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -135,10 +144,18 @@ func (x *DeleteItemRequest) GetLocation() string {
 	return ""
 }
 
+func (x *DeleteItemRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 type GetItemRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sku           string                 `protobuf:"bytes,1,opt,name=sku,proto3" json:"sku,omitempty"`
 	Location      string                 `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
+	UserId        uint64                 `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -187,9 +204,17 @@ func (x *GetItemRequest) GetLocation() string {
 	return ""
 }
 
+func (x *GetItemRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 type ListByLocationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Location      string                 `protobuf:"bytes,1,opt,name=location,proto3" json:"location,omitempty"`
+	UserId        uint64                 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -231,11 +256,19 @@ func (x *ListByLocationRequest) GetLocation() string {
 	return ""
 }
 
+func (x *ListByLocationRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 type StockItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sku           string                 `protobuf:"bytes,1,opt,name=sku,proto3" json:"sku,omitempty"`
 	Location      string                 `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
 	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
+	UserId        uint64                 `protobuf:"varint,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -291,6 +324,13 @@ func (x *StockItem) GetCount() int32 {
 	return 0
 }
 
+func (x *StockItem) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 type StockResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
@@ -339,6 +379,7 @@ type ListByLocationResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Location      string                 `protobuf:"bytes,1,opt,name=location,proto3" json:"location,omitempty"`
 	Items         []*StockItem           `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
+	UserId        uint64                 `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -387,32 +428,45 @@ func (x *ListByLocationResponse) GetItems() []*StockItem {
 	return nil
 }
 
+func (x *ListByLocationResponse) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 var File_stocks_stocks_proto protoreflect.FileDescriptor
 
 const file_stocks_stocks_proto_rawDesc = "" +
 	"\n" +
-	"\x13stocks/stocks.proto\x12\x05stock\x1a\x1cgoogle/api/annotations.proto\"T\n" +
+	"\x13stocks/stocks.proto\x12\x05stock\x1a\x1cgoogle/api/annotations.proto\"m\n" +
 	"\x0eAddItemRequest\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
 	"\blocation\x18\x02 \x01(\tR\blocation\x12\x14\n" +
-	"\x05count\x18\x03 \x01(\x05R\x05count\"A\n" +
+	"\x05count\x18\x03 \x01(\x05R\x05count\x12\x17\n" +
+	"\auser_id\x18\x04 \x01(\x04R\x06userId\"Z\n" +
 	"\x11DeleteItemRequest\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
-	"\blocation\x18\x02 \x01(\tR\blocation\">\n" +
+	"\blocation\x18\x02 \x01(\tR\blocation\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x04R\x06userId\"W\n" +
 	"\x0eGetItemRequest\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
-	"\blocation\x18\x02 \x01(\tR\blocation\"3\n" +
+	"\blocation\x18\x02 \x01(\tR\blocation\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x04R\x06userId\"L\n" +
 	"\x15ListByLocationRequest\x12\x1a\n" +
-	"\blocation\x18\x01 \x01(\tR\blocation\"O\n" +
+	"\blocation\x18\x01 \x01(\tR\blocation\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x04R\x06userId\"h\n" +
 	"\tStockItem\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
 	"\blocation\x18\x02 \x01(\tR\blocation\x12\x14\n" +
-	"\x05count\x18\x03 \x01(\x05R\x05count\")\n" +
+	"\x05count\x18\x03 \x01(\x05R\x05count\x12\x17\n" +
+	"\auser_id\x18\x04 \x01(\x04R\x06userId\")\n" +
 	"\rStockResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"\\\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"u\n" +
 	"\x16ListByLocationResponse\x12\x1a\n" +
 	"\blocation\x18\x01 \x01(\tR\blocation\x12&\n" +
-	"\x05items\x18\x02 \x03(\v2\x10.stock.StockItemR\x05items2\xfa\x02\n" +
+	"\x05items\x18\x02 \x03(\v2\x10.stock.StockItemR\x05items\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x04R\x06userId2\xfa\x02\n" +
 	"\fStockService\x12S\n" +
 	"\aAddItem\x12\x15.stock.AddItemRequest\x1a\x14.stock.StockResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/stocks/item/add\x12Y\n" +
 	"\n" +

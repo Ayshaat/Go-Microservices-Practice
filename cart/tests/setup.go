@@ -2,10 +2,7 @@ package tests
 
 import (
 	"cart/internal/config"
-	"cart/internal/repository"
 	"cart/internal/server"
-	"cart/internal/stockclient"
-	"cart/internal/usecase"
 	"cart/tests/mock"
 	"context"
 	"database/sql"
@@ -65,25 +62,15 @@ func setupTestDB(t *testing.T) *sql.DB {
 }
 
 func setupServer(t *testing.T, db *sql.DB) http.Handler {
-	cartRepo := repository.NewPostgresCartRepo(db)
 
 	mockStock := mock.StartMockStockServer()
 	t.Cleanup(mockStock.Close)
-
-	stockCli, err := stockclient.NewGRPCClient(mockStock.URL)
-	if err != nil {
-		t.Fatalf("failed to create stock client: %v", err)
-	}
-
-	producer := &noopProducer{}
-
-	cartUsecase := usecase.NewCartUsecase(cartRepo, stockCli, producer)
 
 	cfg := mustLoadConfig(t)
 
 	ctx := context.Background()
 
-	handler, err := server.NewGatewayMux(ctx, cfg, cartUsecase)
+	handler, err := server.NewGatewayMux(ctx, cfg)
 	if err != nil {
 		t.Fatalf("failed to build gateway mux: %v", err)
 	}

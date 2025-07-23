@@ -24,7 +24,7 @@ const (
 	idleTimeout  = 120 * time.Second
 )
 
-func NewGatewayMux(ctx context.Context, cfg *config.Config, cartUC usecase.CartUseCase) (http.Handler, error) {
+func NewGatewayMux(ctx context.Context, cfg *config.Config) (http.Handler, error) {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
 	mux := runtime.NewServeMux()

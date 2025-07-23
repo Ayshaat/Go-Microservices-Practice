@@ -5,8 +5,9 @@ import (
 	"log"
 	"strconv"
 
+	"stocks/internal/errors"
 	"stocks/internal/usecase"
-	stockpb "stocks/pkg/api"
+	stockpb "stocks/pkg/api/stocks"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -29,6 +30,8 @@ func NewStockServer(u usecase.StockUseCase) stockpb.StockServiceServer {
 }
 
 func (s *StockServer) AddItem(ctx context.Context, req *stockpb.AddItemRequest) (*stockpb.StockResponse, error) {
+	log.Printf("AddItem called: %+v", req)
+
 	item, err := ValidateAddItemRequest(req)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -36,11 +39,20 @@ func (s *StockServer) AddItem(ctx context.Context, req *stockpb.AddItemRequest) 
 
 	err = s.usecase.Add(ctx, item)
 	if err != nil {
-		log.Printf("AddItem error: %v", err)
-		return nil, status.Error(codes.Internal, "failed to add item")
+		switch err {
+		case errors.ErrInvalidSKU:
+			log.Printf("AddItem error: %v", err)
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		case errors.ErrOwnershipViolation:
+			log.Printf("AddItem error: %v", err)
+			return nil, status.Error(codes.PermissionDenied, err.Error())
+		default:
+			log.Printf("AddItem error: %v", err)
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
-	return &stockpb.StockResponse{Message: "item added"}, nil
+	return &stockpb.StockResponse{Message: "Item added successfully"}, nil
 }
 
 func (s *StockServer) DeleteItem(ctx context.Context, req *stockpb.DeleteItemRequest) (*stockpb.StockResponse, error) {
@@ -55,7 +67,7 @@ func (s *StockServer) DeleteItem(ctx context.Context, req *stockpb.DeleteItemReq
 		return nil, status.Error(codes.Internal, "failed to delete item")
 	}
 
-	return &stockpb.StockResponse{Message: "item deleted"}, nil
+	return &stockpb.StockResponse{Message: "Item deleted successfully"}, nil
 }
 
 func (s *StockServer) GetItem(ctx context.Context, req *stockpb.GetItemRequest) (*stockpb.StockItem, error) {

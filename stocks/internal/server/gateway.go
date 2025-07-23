@@ -10,7 +10,7 @@ import (
 
 	"stocks/internal/config"
 	"stocks/internal/usecase"
-	stockpb "stocks/pkg/api"
+	stockpb "stocks/pkg/api/stocks"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
@@ -24,7 +24,7 @@ const (
 	readHeaderTimeout = 5 * time.Second
 )
 
-func NewGatewayMux(ctx context.Context, cfg *config.Config, useCase usecase.StockUseCase) (http.Handler, error) {
+func NewGatewayMux(ctx context.Context, cfg *config.Config) (http.Handler, error) {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
 	mux := runtime.NewServeMux()

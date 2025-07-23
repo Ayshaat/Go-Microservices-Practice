@@ -37,26 +37,31 @@ message AddItemRequest {
   string sku = 1;
   string location = 2;
   int32 count = 3;
+  uint64 user_id = 4;
 }
 
 message DeleteItemRequest {
   string sku = 1;
   string location = 2;
+   uint64 user_id = 3;
 }
 
 message GetItemRequest {
   string sku = 1;
   string location = 2;
+  uint64 user_id = 3;
 }
 
 message ListByLocationRequest {
   string location = 1;
+  uint64 user_id = 2;
 }
 
 message StockItem {
   string sku = 1;
   string location = 2;
   int32 count = 3;
+  uint64 user_id = 4;
 }
 
 message StockResponse {
@@ -66,4 +71,5 @@ message StockResponse {
 message ListByLocationResponse {
   string location = 1;
   repeated StockItem items = 2;
+   uint64 user_id = 3;
 }

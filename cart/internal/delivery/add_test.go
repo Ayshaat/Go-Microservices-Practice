@@ -53,7 +53,7 @@ func TestHandler_AddItem(t *testing.T) {
 					Add(gomock.Any(), gomock.Any()).
 					Return(errors.ErrInvalidSKU)
 			},
-			expectedErr: "Invalid SKU",
+			expectedErr: "invalid SKU",
 		},
 		{
 			name: "item exists error",
@@ -63,7 +63,7 @@ func TestHandler_AddItem(t *testing.T) {
 					Add(gomock.Any(), gomock.Any()).
 					Return(errors.ErrCartItemExists)
 			},
-			expectedErr: "Item already exists",
+			expectedErr: "cart item already exists",
 		},
 		{
 			name: "internal server error",
@@ -73,7 +73,7 @@ func TestHandler_AddItem(t *testing.T) {
 					Add(gomock.Any(), gomock.Any()).
 					Return(stdErr.New("some error"))
 			},
-			expectedErr: "rpc error: code = Internal desc = some error",
+			expectedErr: "some error",
 		},
 	}
 

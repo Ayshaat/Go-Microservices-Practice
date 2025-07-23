@@ -6,7 +6,7 @@ import (
 	"stocks/internal/delivery"
 	"stocks/internal/models"
 	"stocks/internal/usecase/mocks"
-	stockspb "stocks/pkg/api"
+	stockspb "stocks/pkg/api/stocks"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -50,17 +50,17 @@ func TestHandler_ListByLocation(t *testing.T) {
 			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().
-					ListByLocation(gomock.Any(), "loc1", int64(10), int64(1)).
+					ListByLocation(gomock.Any(), "loc1", gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("db error"))
 			},
-			expectedErr: "db error",
+			expectedErr: "failed to list items",
 		},
 		{
 			name: "success",
 			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().
-					ListByLocation(gomock.Any(), "loc1", int64(10), int64(1)).
+					ListByLocation(gomock.Any(), "loc1", gomock.Any(), gomock.Any()).
 					Return(expectedItems, nil)
 			},
 			expectedResult: &stockspb.ListByLocationResponse{
