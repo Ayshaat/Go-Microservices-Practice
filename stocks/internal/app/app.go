@@ -66,7 +66,7 @@ func Run(envFile string) error {
 
 	useCase := usecase.NewStockUsecase(repo, txManager, producer)
 
-	ctx, cancel := context.WithTimeout(context.Background(), config.WriteTimeout)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	errCh := make(chan error, serverCount)
@@ -90,7 +90,7 @@ func Run(envFile string) error {
 		defer wg.Done()
 		log.Println("Starting gRPC-Gateway server on port", cfg.GatewayPort)
 
-		if err := server.StartGatewayServer(ctx, cfg, useCase); err != nil {
+		if err := server.StartGatewayServer(ctx, cfg); err != nil {
 			errCh <- fmt.Errorf("gRPC-Gateway server failed: %w", err)
 		}
 	}()

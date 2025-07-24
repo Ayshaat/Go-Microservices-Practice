@@ -26,7 +26,8 @@ func Run(envFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
-
+	log.Println(cfg.GRPCPort)
+	log.Println(cfg.HTTPPort)
 	database, err := db.ConnectDB(cfg.PostgresConnStr())
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
@@ -55,7 +56,7 @@ func Run(envFile string) error {
 
 	errCh := make(chan error, serverCount)
 
-	ctx, cancel := context.WithTimeout(context.Background(), config.WriteTimeout)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	stop := make(chan os.Signal, 1)
@@ -77,7 +78,7 @@ func Run(envFile string) error {
 		defer wg.Done()
 		log.Println("Starting gRPC-Gateway server on port", cfg.HTTPPort)
 
-		if err := server.StartGatewayServer(ctx, cfg, cartUseCase); err != nil {
+		if err := server.StartGatewayServer(ctx, cfg); err != nil {
 			errCh <- fmt.Errorf("gateway server failed: %w", err)
 		}
 	}()

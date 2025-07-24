@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"stocks/internal/config"
-	"stocks/internal/usecase"
 	stockpb "stocks/pkg/api/stocks"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -37,7 +36,7 @@ func NewGatewayMux(ctx context.Context, cfg *config.Config) (http.Handler, error
 	return mux, nil
 }
 
-func StartGatewayServer(ctx context.Context, cfg *config.Config, stockUC usecase.StockUseCase) error {
+func StartGatewayServer(ctx context.Context, cfg *config.Config) error {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
 	mux := runtime.NewServeMux()

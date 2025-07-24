@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"cart/internal/config"
-	"cart/internal/usecase"
-
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -36,12 +34,12 @@ func NewGatewayMux(ctx context.Context, cfg *config.Config) (http.Handler, error
 	return mux, nil
 }
 
-func StartGatewayServer(ctx context.Context, cfg *config.Config, cartUC usecase.CartUseCase) error {
+func StartGatewayServer(ctx context.Context, cfg *config.Config) error {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
 	mux := runtime.NewServeMux()
 
-	err := cartpb.RegisterCartServiceHandlerFromEndpoint(context.Background(), mux, cfg.GRPCEndpoint, opts)
+	err := cartpb.RegisterCartServiceHandlerFromEndpoint(context.Background(), mux, cfg.GRPCPort, opts)
 	if err != nil {
 		return fmt.Errorf("failed to register gateway: %w", err)
 	}
