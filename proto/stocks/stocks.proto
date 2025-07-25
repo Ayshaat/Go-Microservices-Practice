@@ -38,6 +38,7 @@ message AddItemRequest {
   string location = 2;
   int32 count = 3;
   uint64 user_id = 4;
+  float price = 5;
 }
 
 message DeleteItemRequest {
@@ -62,6 +63,7 @@ message StockItem {
   string location = 2;
   int32 count = 3;
   uint64 user_id = 4;
+  float price = 5;
 }
 
 message StockResponse {

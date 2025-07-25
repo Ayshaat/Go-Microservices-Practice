@@ -29,6 +29,7 @@ type AddItemRequest struct {
 	Location      string                 `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
 	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
 	UserId        uint64                 `protobuf:"varint,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Price         float32                `protobuf:"fixed32,5,opt,name=price,proto3" json:"price,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -87,6 +88,13 @@ func (x *AddItemRequest) GetCount() int32 {
 func (x *AddItemRequest) GetUserId() uint64 {
 	if x != nil {
 		return x.UserId
+	}
+	return 0
+}
+
+func (x *AddItemRequest) GetPrice() float32 {
+	if x != nil {
+		return x.Price
 	}
 	return 0
 }
@@ -269,6 +277,7 @@ type StockItem struct {
 	Location      string                 `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
 	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
 	UserId        uint64                 `protobuf:"varint,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Price         float32                `protobuf:"fixed32,5,opt,name=price,proto3" json:"price,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -327,6 +336,13 @@ func (x *StockItem) GetCount() int32 {
 func (x *StockItem) GetUserId() uint64 {
 	if x != nil {
 		return x.UserId
+	}
+	return 0
+}
+
+func (x *StockItem) GetPrice() float32 {
+	if x != nil {
+		return x.Price
 	}
 	return 0
 }
@@ -439,12 +455,13 @@ var File_stocks_stocks_proto protoreflect.FileDescriptor
 
 const file_stocks_stocks_proto_rawDesc = "" +
 	"\n" +
-	"\x13stocks/stocks.proto\x12\x05stock\x1a\x1cgoogle/api/annotations.proto\"m\n" +
+	"\x13stocks/stocks.proto\x12\x05stock\x1a\x1cgoogle/api/annotations.proto\"\x83\x01\n" +
 	"\x0eAddItemRequest\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
 	"\blocation\x18\x02 \x01(\tR\blocation\x12\x14\n" +
 	"\x05count\x18\x03 \x01(\x05R\x05count\x12\x17\n" +
-	"\auser_id\x18\x04 \x01(\x04R\x06userId\"Z\n" +
+	"\auser_id\x18\x04 \x01(\x04R\x06userId\x12\x14\n" +
+	"\x05price\x18\x05 \x01(\x02R\x05price\"Z\n" +
 	"\x11DeleteItemRequest\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
 	"\blocation\x18\x02 \x01(\tR\blocation\x12\x17\n" +
@@ -455,12 +472,13 @@ const file_stocks_stocks_proto_rawDesc = "" +
 	"\auser_id\x18\x03 \x01(\x04R\x06userId\"L\n" +
 	"\x15ListByLocationRequest\x12\x1a\n" +
 	"\blocation\x18\x01 \x01(\tR\blocation\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x04R\x06userId\"h\n" +
+	"\auser_id\x18\x02 \x01(\x04R\x06userId\"~\n" +
 	"\tStockItem\x12\x10\n" +
 	"\x03sku\x18\x01 \x01(\tR\x03sku\x12\x1a\n" +
 	"\blocation\x18\x02 \x01(\tR\blocation\x12\x14\n" +
 	"\x05count\x18\x03 \x01(\x05R\x05count\x12\x17\n" +
-	"\auser_id\x18\x04 \x01(\x04R\x06userId\")\n" +
+	"\auser_id\x18\x04 \x01(\x04R\x06userId\x12\x14\n" +
+	"\x05price\x18\x05 \x01(\x02R\x05price\")\n" +
 	"\rStockResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"u\n" +
 	"\x16ListByLocationResponse\x12\x1a\n" +
