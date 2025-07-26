@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   stocks:
-#    image: ayshaat/stocks:hw9
+    image: ayshaat/stocks:hw10
     build: .
     container_name: stock-service
     depends_on:
