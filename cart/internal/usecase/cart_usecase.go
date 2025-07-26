@@ -50,6 +50,7 @@ func (u *cartUseCase) Add(ctx context.Context, item models.CartItem) error {
 		u.sendFailedEvent(item.UserID, item.SKU, item.Count, "not enough stock")
 		return errors.ErrNotEnoughStock
 	}
+	item.Price = stockItem.Price
 
 	err = u.repo.Upsert(ctx, item)
 	if err != nil {
@@ -63,7 +64,6 @@ func (u *cartUseCase) Add(ctx context.Context, item models.CartItem) error {
 		int(item.Count),
 		"success",
 	)
-
 	if err != nil {
 		log.Printf("failed to send CartItemAdded event: %v", err)
 	}

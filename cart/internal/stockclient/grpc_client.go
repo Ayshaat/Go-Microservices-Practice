@@ -62,6 +62,7 @@ func (c *GRPCClient) GetBySKU(ctx context.Context, sku uint32) (models.StockItem
 		SKU:      sku,
 		Location: resp.Location,
 		Count:    int16(resp.Count),
+		Price:    float64(resp.Price),
 	}, nil
 
 }

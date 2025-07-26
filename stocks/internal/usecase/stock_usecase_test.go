@@ -55,7 +55,7 @@ func TestStockUseCase_Add(t *testing.T) {
 
 				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
 				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(existing, nil)
-				mockRepo.EXPECT().UpdateCount(ctx, item.UserID, item.SKU, existing.Count+item.Count).Return(nil)
+				mockRepo.EXPECT().UpdateCount(ctx, item.UserID, item.SKU, existing.Count+item.Count, item.Price).Return(nil)
 				mockProducer.EXPECT().
 					SendStockChanged(fmt.Sprint(existing.SKU), int(existing.Count+item.Count), existing.Price).
 					Return(nil)

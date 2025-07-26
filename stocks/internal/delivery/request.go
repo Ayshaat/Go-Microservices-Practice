@@ -40,6 +40,8 @@ func ValidateAddItemRequest(req *stockpb.AddItemRequest) (models.StockItem, erro
 		SKU:      sku,
 		Location: req.GetLocation(),
 		Count:    uint16(req.GetCount()),
+		Price:    float64(req.GetPrice()),
+		UserID:   int64(req.GetUserId()),
 	}, nil
 }
 

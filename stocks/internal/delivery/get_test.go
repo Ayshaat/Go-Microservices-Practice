@@ -64,6 +64,7 @@ func TestHandler_GetItem(t *testing.T) {
 				Sku:      "1001",
 				Location: "loc1",
 				Count:    int32(expectedItem.Count),
+				Price:    float32(expectedItem.Price),
 			},
 		},
 		{

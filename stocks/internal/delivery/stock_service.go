@@ -86,6 +86,7 @@ func (s *StockServer) GetItem(ctx context.Context, req *stockpb.GetItemRequest) 
 		Sku:      strconv.FormatUint(uint64(item.SKU), 10),
 		Location: item.Location,
 		Count:    int32(item.Count),
+		Price:    float32(item.Price),
 	}, nil
 }
 

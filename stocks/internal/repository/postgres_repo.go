@@ -53,11 +53,11 @@ func (r *PostgresStockRepo) GetByUserSKU(ctx context.Context, userID int64, sku 
 	return item, err
 }
 
-func (r *PostgresStockRepo) UpdateCount(ctx context.Context, userID int64, sku uint32, newCount uint16) error {
+func (r *PostgresStockRepo) UpdateCount(ctx context.Context, userID int64, sku uint32, newCount uint16, price float64) error {
 	_, err := r.getter.DefaultTrOrDB(ctx, r.db).ExecContext(ctx, `
-        UPDATE stock_items SET count = $1
-        WHERE user_id = $2 AND sku = $3
-    `, newCount, userID, sku)
+        UPDATE stock_items SET count = $1, price = $2
+        WHERE user_id = $3 AND sku = $4
+    `, newCount, price, userID, sku)
 
 	return err
 }
