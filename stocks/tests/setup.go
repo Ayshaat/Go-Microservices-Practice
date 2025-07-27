@@ -5,20 +5,14 @@ import (
 	"os"
 	"testing"
 
+	"context"
 	"stocks/internal/config"
 	"stocks/internal/db"
-	"stocks/internal/delivery"
-	"stocks/internal/repository"
-	"stocks/internal/usecase"
+	"stocks/internal/server"
 
 	"github.com/jmoiron/sqlx"
 
-	mockKafka "stocks/internal/usecase/mocks"
-
 	"github.com/golang/mock/gomock"
-
-	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sql/v2"
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 
 	_ "github.com/lib/pq"
 )
@@ -29,15 +23,20 @@ func skipIfNotIntegration(t *testing.T) {
 	}
 }
 
+func mustLoadConfig(t *testing.T) *config.Config {
+	cfg, err := config.Load("../.env.local")
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+	return cfg
+}
+
 func setupTestDB(t *testing.T) *sqlx.DB {
 	if os.Getenv("INTEGRATION_TEST") != "1" {
 		t.Skip("Skipping integration test: INTEGRATION_TEST not set")
 	}
 
-	cfg, err := config.Load("../.env.local")
-	if err != nil {
-		t.Fatalf("failed to load config: %v", err)
-	}
+	cfg := mustLoadConfig(t)
 
 	sqlDB, err := db.ConnectDB(cfg.PostgresConnStr(), "../internal/db/migrations")
 	if err != nil {
@@ -63,18 +62,15 @@ func setupTestDB(t *testing.T) *sqlx.DB {
 	return dbx
 }
 
-func setupServer(_ *testing.T, db *sqlx.DB, ctrl *gomock.Controller) http.Handler {
-	txFactory := trmsqlx.NewDefaultFactory(db.DB)
-	txManager := manager.Must(txFactory)
-	txCtxGetter := trmsqlx.DefaultCtxGetter
+func setupServer(t *testing.T, db *sqlx.DB, ctrl *gomock.Controller) http.Handler {
+	cfg := mustLoadConfig(t)
 
-	repo := repository.NewPostgresStockRepo(db, txCtxGetter)
-	mockProducer := mockKafka.NewMockProducerInterface(ctrl)
-	useCase := usecase.NewStockUsecase(repo, txManager, mockProducer)
-	handler := delivery.NewHandler(useCase)
+	ctx := context.Background()
 
-	mux := http.NewServeMux()
-	handler.RegisterRoutes(mux)
+	mux, err := server.NewGatewayMux(ctx, cfg)
+	if err != nil {
+		t.Fatalf("failed to create gateway mux: %v", err)
+	}
 
 	return mux
 }

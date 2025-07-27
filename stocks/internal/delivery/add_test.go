@@ -1,15 +1,14 @@
 package delivery_test
 
 import (
-	"bytes"
+	"context"
 	stdErr "errors"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"stocks/internal/delivery"
 	"stocks/internal/errors"
 	"stocks/internal/usecase/mocks"
+	stockspb "stocks/pkg/api/stocks"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -22,71 +21,52 @@ func TestHandler_AddItem(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockStockUseCase(ctrl)
-	handler := delivery.NewHandler(mockUsecase)
+	server := delivery.NewStockServer(mockUsecase)
 
-	validJSON := []byte(`{"user_id":1,"sku":100,"count":2}`)
+	validReq := &stockspb.AddItemRequest{
+		Sku:      "100",
+		Location: "warehouse1",
+		Count:    2,
+	}
 
 	tests := []struct {
 		name           string
-		method         string
-		body           []byte
+		req            *stockspb.AddItemRequest
 		mockSetup      func()
-		wantStatusCode int
-		wantBody       string
+		expectedResult *stockspb.StockResponse
+		expectedErr    string
 	}{
 		{
-			name:           "method not allowed",
-			method:         http.MethodGet,
-			body:           nil,
-			mockSetup:      func() {},
-			wantStatusCode: http.StatusMethodNotAllowed,
-		},
-		{
-			name:           "invalid JSON",
-			method:         http.MethodPost,
-			body:           []byte(`invalid json`),
-			mockSetup:      func() {},
-			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "Invalid request\n", // Updated casing
-		},
-		{
-			name:   "success",
-			method: http.MethodPost,
-			body:   validJSON,
+			name: "success",
+			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Add(gomock.Any(), gomock.Any()).Return(nil)
 			},
-			wantStatusCode: http.StatusCreated, // 201 not 200
+			expectedResult: &stockspb.StockResponse{Message: "Item added successfully"},
 		},
 		{
-			name:   "invalid sku error",
-			method: http.MethodPost,
-			body:   validJSON,
+			name: "invalid sku error",
+			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Add(gomock.Any(), gomock.Any()).Return(errors.ErrInvalidSKU)
 			},
-			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "invalid SKU — not registered\n", // match error
+			expectedErr: "invalid SKU",
 		},
 		{
-			name:   "ownership violation error",
-			method: http.MethodPost,
-			body:   validJSON,
+			name: "ownership violation error",
+			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Add(gomock.Any(), gomock.Any()).Return(errors.ErrOwnershipViolation)
 			},
-			wantStatusCode: http.StatusInternalServerError, // stays 500
-			wantBody:       "ownership violation: user does not own this SKU\n",
+			expectedErr: "ownership violation",
 		},
 		{
-			name:   "internal server error",
-			method: http.MethodPost,
-			body:   validJSON,
+			name: "internal server error",
+			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Add(gomock.Any(), gomock.Any()).Return(stdErr.New("some error"))
 			},
-			wantStatusCode: http.StatusInternalServerError,
-			wantBody:       "some error\n", // match exact output
+			expectedErr: "some error",
 		},
 	}
 
@@ -94,15 +74,15 @@ func TestHandler_AddItem(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
 
-			req := httptest.NewRequest(tt.method, "/add", bytes.NewReader(tt.body))
-			rr := httptest.NewRecorder()
+			resp, err := server.AddItem(context.Background(), tt.req)
 
-			handler.AddItem(rr, req)
-
-			assert.Equal(t, tt.wantStatusCode, rr.Code)
-
-			if tt.wantBody != "" {
-				assert.Equal(t, tt.wantBody, rr.Body.String())
+			if tt.expectedErr != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErr)
+				assert.Nil(t, resp)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, resp)
 			}
 		})
 	}

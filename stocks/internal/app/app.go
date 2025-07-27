@@ -4,18 +4,18 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	_ "github.com/lib/pq"
 
 	"stocks/internal/config"
 	"stocks/internal/db"
-	"stocks/internal/delivery"
 	"stocks/internal/kafka"
 	"stocks/internal/repository"
+	"stocks/internal/server"
 	"stocks/internal/usecase"
 
 	"github.com/jmoiron/sqlx"
@@ -23,6 +23,8 @@ import (
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sql/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 )
+
+const serverCount = 3
 
 func Run(envFile string) error {
 	cfg, err := config.Load(envFile)
@@ -63,46 +65,44 @@ func Run(envFile string) error {
 	}()
 
 	useCase := usecase.NewStockUsecase(repo, txManager, producer)
-	handler := delivery.NewHandler(useCase)
 
-	mux := http.NewServeMux()
-	handler.RegisterRoutes(mux)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	port := os.Getenv("HTTP_PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	srv := &http.Server{
-		Addr:         ":" + port,
-		Handler:      mux,
-		ReadTimeout:  config.ReadTimeout,
-		WriteTimeout: config.WriteTimeout,
-		IdleTimeout:  config.IdleTimeout,
-	}
+	errCh := make(chan error, serverCount)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	go func() {
-		log.Println("Starting server on port", port)
+	var wg sync.WaitGroup
+	wg.Add(serverCount)
 
-		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("stocks server failed: %v", err)
+	go func() {
+		defer wg.Done()
+		log.Println("Starting gRPC server on port", cfg.GRPCPort)
+
+		if err := server.StartGRPCServer(ctx, cfg, useCase); err != nil {
+			errCh <- fmt.Errorf("gRPC server failed: %w", err)
 		}
 	}()
 
-	<-stop
+	go func() {
+		defer wg.Done()
+		log.Println("Starting gRPC-Gateway server on port", cfg.GatewayPort)
 
-	log.Println("Shutting down stocks server...")
+		if err := server.StartGatewayServer(ctx, cfg); err != nil {
+			errCh <- fmt.Errorf("gRPC-Gateway server failed: %w", err)
+		}
+	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), config.WriteTimeout)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		return fmt.Errorf("stocks server shutdown failed: %w", err)
+	select {
+	case sig := <-stop:
+		log.Printf("Shutdown signal received: %v", sig)
+	case err := <-errCh:
+		return err
 	}
 
+	wg.Wait()
 	log.Println("Stocks server gracefully stopped")
 
 	return nil

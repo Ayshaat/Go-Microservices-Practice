@@ -16,6 +16,9 @@ type Config struct {
 	DBPassword      string
 	DBName          string
 	StockServiceURL string
+	GRPCPort        string
+	HTTPPort        string
+	GRPCEndpoint    string
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
@@ -35,6 +38,9 @@ func Load(envFile string) (*Config, error) {
 		DBPassword:      os.Getenv("DB_PASSWORD"),
 		DBName:          os.Getenv("DB_NAME"),
 		StockServiceURL: os.Getenv("STOCK_SERVICE_URL"),
+		GRPCPort:        os.Getenv("GRPC_PORT"),
+		HTTPPort:        os.Getenv("HTTP_PORT"),
+		GRPCEndpoint:    os.Getenv("GRPC_ENDPOINT"),
 		ReadTimeout:     ReadTimeout,
 		WriteTimeout:    WriteTimeout,
 		IdleTimeout:     IdleTimeout,

@@ -1,10 +1,12 @@
 
 services:
   cart:
-    image: ayshaat/cart:hw9
+    image: ayshaat/cart:hw10
+    build: .
     container_name: cart-service
     ports:
       - "8090:8090"
+      - "9090:9090"
     environment:
       - ENV=production
     networks:

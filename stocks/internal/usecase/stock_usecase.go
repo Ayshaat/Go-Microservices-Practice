@@ -56,7 +56,7 @@ func (u *stockUseCase) Add(ctx context.Context, item models.StockItem) error {
 
 		existingItem.Count += item.Count
 
-		err = u.repo.UpdateCount(ctx, existingItem.UserID, existingItem.SKU, existingItem.Count)
+		err = u.repo.UpdateCount(ctx, existingItem.UserID, existingItem.SKU, existingItem.Count, item.Price)
 		if err == nil {
 			if err := u.producer.SendStockChanged(fmt.Sprint(existingItem.SKU), int(existingItem.Count), existingItem.Price); err != nil {
 				log.Printf("failed to send StockChanged event: %v", err)

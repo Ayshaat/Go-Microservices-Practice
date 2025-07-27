@@ -3,6 +3,7 @@ package kafka
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -123,10 +124,15 @@ func NewProducerConfigFromEnv() (*ProducerConfig, error) {
 		partitionStr = "0"
 	}
 
-	partition, err := strconv.Atoi(partitionStr)
+	partitionInt, err := strconv.Atoi(partitionStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse PARTITION: %w", err)
 	}
+	if partitionInt < math.MinInt32 || partitionInt > math.MaxInt32 {
+		return nil, fmt.Errorf("partition value %d out of int32 range", partitionInt)
+	}
+
+	partition := int32(partitionInt)
 
 	service := os.Getenv("SERVICE_NAME")
 	if service == "" {

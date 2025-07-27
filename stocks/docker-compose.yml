@@ -2,13 +2,15 @@ version: "3.8"
 
 services:
   stocks:
-    image: ayshaat/stocks:hw9
+    image: ayshaat/stocks:hw10
+    build: .
     container_name: stock-service
     depends_on:
       stock-postgres:
         condition: service_healthy
     ports:
-      - "8081:8080"  
+      - "8081:8080"
+      - "9094:9094"
     environment:
       - ENV=production
     networks:
@@ -32,6 +34,7 @@ services:
       - "5433:5432"
     networks:
       - app-network
+      - shared-net
 
 networks:
   app-network:
