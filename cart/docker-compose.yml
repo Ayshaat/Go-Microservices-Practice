@@ -33,6 +33,7 @@ services:
       retries: 3
     networks:
       - app-network
+  
 
 networks:
   app-network:

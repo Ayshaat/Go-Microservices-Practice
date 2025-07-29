@@ -20,7 +20,9 @@ func TestHandler_GetItem(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockStockUseCase(ctrl)
-	server := delivery.NewStockServer(mockUsecase)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	server := delivery.NewStockServer(mockUsecase, mockLogger)
 
 	validReq := &stockspb.GetItemRequest{
 		Sku:      "1001",
@@ -50,6 +52,8 @@ func TestHandler_GetItem(t *testing.T) {
 			mockSetup: func() {
 				mockUsecase.EXPECT().GetBySKU(gomock.Any(), uint32(1001)).
 					Return(models.StockItem{}, errors.New("not found"))
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 			},
 			expectedErr: "not found",
 		},
@@ -59,6 +63,7 @@ func TestHandler_GetItem(t *testing.T) {
 			mockSetup: func() {
 				mockUsecase.EXPECT().GetBySKU(gomock.Any(), uint32(1001)).
 					Return(expectedItem, nil)
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 			},
 			expectedResult: &stockspb.StockItem{
 				Sku:      "1001",
@@ -74,6 +79,8 @@ func TestHandler_GetItem(t *testing.T) {
 				mockUsecase.EXPECT().
 					GetBySKU(gomock.Any(), uint32(1001)).
 					Return(models.StockItem{}, errors.New("db error"))
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 			},
 			expectedErr: "db error",
 		},

@@ -20,7 +20,9 @@ func TestHandler_ListItems(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockCartUseCase(ctrl)
-	server := delivery.NewCartServer(mockUsecase)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	server := delivery.NewCartServer(mockUsecase, mockLogger)
 	validReq := &cart.ListCartRequest{
 		UserId: "1",
 	}
@@ -37,6 +39,7 @@ func TestHandler_ListItems(t *testing.T) {
 			name: "success with items",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 				mockUsecase.EXPECT().List(gomock.Any(), int64(1)).Return([]models.CartItem{
 					{UserID: 1, SKU: 100, Count: 2},
 					{UserID: 1, SKU: 101, Count: 3},
@@ -54,6 +57,7 @@ func TestHandler_ListItems(t *testing.T) {
 			name: "success with nil items returns empty slice",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 				mockUsecase.EXPECT().List(gomock.Any(), int64(1)).Return(nil, nil)
 			},
 			expectedResult: &cart.ListCartResponse{
@@ -65,6 +69,8 @@ func TestHandler_ListItems(t *testing.T) {
 			name: "internal server error",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 				mockUsecase.EXPECT().List(gomock.Any(), int64(1)).Return(nil, stdErrors.New("db error"))
 			},
 			expectedErr: "db error",

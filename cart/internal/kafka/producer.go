@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -10,8 +11,11 @@ import (
 	"time"
 
 	"cart/internal/event"
+	"cart/internal/log"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 const maxProducerRetry = 5
@@ -28,9 +32,10 @@ type Producer struct {
 	topic     string
 	partition int32
 	service   string
+	logger    log.Logger
 }
 
-func NewProducer(cfg *ProducerConfig) (*Producer, error) {
+func NewProducer(cfg *ProducerConfig, logger log.Logger) (*Producer, error) {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.NoResponse
 	config.Producer.Return.Successes = true
@@ -41,18 +46,38 @@ func NewProducer(cfg *ProducerConfig) (*Producer, error) {
 
 	producer, err := sarama.NewSyncProducer(cfg.Brokers, config)
 	if err != nil {
+		logger.Error("failed to create Kafka producer", log.Error(err))
 		return nil, fmt.Errorf("failed to create Kafka producer: %w", err)
 	}
+
+	logger.Info("Kafka producer created",
+		log.Strings("brokers", cfg.Brokers),
+		log.String("topic", cfg.Topic),
+		log.Int32("partition", cfg.Partition),
+		log.String("service", cfg.Service),
+	)
 
 	return &Producer{
 		producer:  producer,
 		topic:     cfg.Topic,
 		partition: cfg.Partition,
 		service:   cfg.Service,
+		logger:    logger,
 	}, nil
 }
 
-func (p *Producer) SendCartItemAdded(cartId, sku string, count int, status string) error {
+func (p *Producer) SendCartItemAdded(ctx context.Context, cartId, sku string, count int, status string) error {
+	tr := otel.Tracer("kafka-producer")
+	ctx, span := tr.Start(ctx, "SendCartItemAdded")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("cart_id", cartId),
+		attribute.String("sku", sku),
+		attribute.Int("count", count),
+		attribute.String("status", status),
+	)
+
 	payload := event.CartItemAddedPayload{
 		CartID: cartId,
 		SKU:    sku,
@@ -60,10 +85,29 @@ func (p *Producer) SendCartItemAdded(cartId, sku string, count int, status strin
 		Status: status,
 	}
 
-	return p.send("cart_item_added", payload)
+	p.logger.Info("Sending cart_item_added event",
+		log.String("cart_id", cartId),
+		log.String("sku", sku),
+		log.Int("count", count),
+		log.String("status", status),
+	)
+
+	return p.send(ctx, "cart_item_added", payload)
 }
 
-func (p *Producer) SendCartItemFailed(cartId, sku string, count int, status, reason string) error {
+func (p *Producer) SendCartItemFailed(ctx context.Context, cartId, sku string, count int, status, reason string) error {
+	tr := otel.Tracer("kafka-producer")
+	ctx, span := tr.Start(ctx, "SendCartItemFailed")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("cart_id", cartId),
+		attribute.String("sku", sku),
+		attribute.Int("count", count),
+		attribute.String("status", status),
+		attribute.String("reason", reason),
+	)
+
 	payload := event.CartItemFailedPayload{
 		CartID: cartId,
 		SKU:    sku,
@@ -72,10 +116,18 @@ func (p *Producer) SendCartItemFailed(cartId, sku string, count int, status, rea
 		Reason: reason,
 	}
 
-	return p.send("cart_item_failed", payload)
+	p.logger.Info("Sending cart_item_failed event",
+		log.String("cart_id", cartId),
+		log.String("sku", sku),
+		log.Int("count", count),
+		log.String("status", status),
+		log.String("reason", reason),
+	)
+
+	return p.send(ctx, "cart_item_failed", payload)
 }
 
-func (p *Producer) send(eventType string, payload interface{}) error {
+func (p *Producer) send(ctx context.Context, eventType string, payload interface{}) error {
 	msg := event.KafkaMessage{
 		Type:      eventType,
 		Service:   p.service,
@@ -85,6 +137,10 @@ func (p *Producer) send(eventType string, payload interface{}) error {
 
 	valueBytes, err := json.Marshal(msg)
 	if err != nil {
+		p.logger.Error("Failed to marshal Kafka message",
+			log.String("event_type", eventType),
+			log.Error(err),
+		)
 		return fmt.Errorf("failed to marshal Kafka message: %w", err)
 	}
 
@@ -95,16 +151,32 @@ func (p *Producer) send(eventType string, payload interface{}) error {
 		Key:       sarama.StringEncoder(fmt.Sprintf("%s-%d", p.service, time.Now().UnixNano())),
 	}
 
-	_, _, err = p.producer.SendMessage(producerMsg)
+	partition, offset, err := p.producer.SendMessage(producerMsg)
 	if err != nil {
+		p.logger.Error("Failed to send Kafka message",
+			log.String("event_type", eventType),
+			log.Error(err),
+		)
 		return fmt.Errorf("failed to send Kafka message: %w", err)
 	}
+
+	p.logger.Info("Kafka message sent successfully",
+		log.String("event_type", eventType),
+		log.Int32("partition", partition),
+		log.Int64("offset", offset),
+	)
 
 	return nil
 }
 
 func (p *Producer) Close() error {
-	return p.producer.Close()
+	err := p.producer.Close()
+	if err != nil {
+		p.logger.Error("failed to close Kafka producer", log.Error(err))
+	} else {
+		p.logger.Info("Kafka producer closed")
+	}
+	return err
 }
 
 func NewProducerConfigFromEnv() (*ProducerConfig, error) {

@@ -5,6 +5,8 @@ services:
     container_name: metrics-consumer
     env_file:
       - .env.docker
+    ports:
+      - "9095:9095"
     networks:
       - shared-net
     healthcheck:

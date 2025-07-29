@@ -4,14 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
+	"stocks/internal/log"
+	"stocks/internal/log/zap"
+	"stocks/internal/metrics"
 	"time"
 
 	"stocks/internal/config"
 	stockpb "stocks/pkg/api/stocks"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -36,34 +39,41 @@ func NewGatewayMux(ctx context.Context, cfg *config.Config) (http.Handler, error
 	return mux, nil
 }
 
-func StartGatewayServer(ctx context.Context, cfg *config.Config) error {
+func StartGatewayServer(ctx context.Context, cfg *config.Config, logger *zap.Logger, m *metrics.Metrics) error {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
 	mux := runtime.NewServeMux()
 
 	err := stockpb.RegisterStockServiceHandlerFromEndpoint(context.Background(), mux, cfg.GRPCPort, opts)
 	if err != nil {
+		logger.Error("failed to register gRPC-Gateway endpoint", log.Error(err))
 		return fmt.Errorf("failed to register gateway: %w", err)
 	}
 
+	handler := metrics.MetricsMiddleware(m, logger)(mux)
+	handler = loggingMiddleware(logger, handler)
+
+	handler = otelhttp.NewHandler(handler, "grpc-gateway")
+
 	srv := &http.Server{
 		Addr:              cfg.GatewayPort,
-		Handler:           mux,
+		Handler:           handler,
 		ReadTimeout:       readTimeout,
 		WriteTimeout:      writeTimeout,
 		IdleTimeout:       idleTimeout,
 		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
+	logger.Info("gRPC-Gateway HTTP server listening", log.String("address", cfg.GatewayPort))
+
 	errCh := make(chan error, 1)
 	go func() {
-		log.Printf("gRPC-Gateway HTTP server listening on %s", cfg.GatewayPort)
 		errCh <- srv.ListenAndServe()
 	}()
 
 	select {
 	case <-ctx.Done():
-		log.Println("Shutting down gRPC-Gateway server gracefully...")
+		logger.Info("Shutting down gRPC-Gateway server gracefully...")
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), readTimeout)
 		defer cancel()
@@ -74,6 +84,7 @@ func StartGatewayServer(ctx context.Context, cfg *config.Config) error {
 			return nil
 		}
 
+		logger.Error("gRPC-Gateway server failed", log.Error(err))
 		return fmt.Errorf("gRPC-Gateway server failed: %w", err)
 	}
 }

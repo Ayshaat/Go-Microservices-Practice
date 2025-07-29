@@ -9,16 +9,17 @@ import (
 )
 
 type Config struct {
-	DBHost       string
-	DBPort       string
-	DBUser       string
-	DBPassword   string
-	DBName       string
-	GRPCPort     string
-	GatewayPort  string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	DBHost         string
+	DBPort         string
+	DBUser         string
+	DBPassword     string
+	DBName         string
+	GRPCPort       string
+	GatewayPort    string
+	JaegerEndpoint string
+	ReadTimeout    time.Duration
+	WriteTimeout   time.Duration
+	IdleTimeout    time.Duration
 }
 
 func Load(envFile string) (*Config, error) {
@@ -27,16 +28,17 @@ func Load(envFile string) (*Config, error) {
 	}
 
 	cfg := &Config{
-		DBHost:       os.Getenv("DB_HOST"),
-		DBPort:       os.Getenv("DB_PORT"),
-		DBUser:       os.Getenv("DB_USER"),
-		DBPassword:   os.Getenv("DB_PASSWORD"),
-		DBName:       os.Getenv("DB_NAME"),
-		GRPCPort:     os.Getenv("GRPC_PORT"),
-		GatewayPort:  os.Getenv("GATEWAY_PORT"),
-		ReadTimeout:  ReadTimeout,
-		WriteTimeout: WriteTimeout,
-		IdleTimeout:  IdleTimeout,
+		DBHost:         os.Getenv("DB_HOST"),
+		DBPort:         os.Getenv("DB_PORT"),
+		DBUser:         os.Getenv("DB_USER"),
+		DBPassword:     os.Getenv("DB_PASSWORD"),
+		DBName:         os.Getenv("DB_NAME"),
+		GRPCPort:       os.Getenv("GRPC_PORT"),
+		GatewayPort:    os.Getenv("GATEWAY_PORT"),
+		JaegerEndpoint: os.Getenv("JAEGER_ENDPOINT"),
+		ReadTimeout:    ReadTimeout,
+		WriteTimeout:   WriteTimeout,
+		IdleTimeout:    IdleTimeout,
 	}
 
 	if cfg.DBHost == "" || cfg.DBUser == "" || cfg.DBName == "" {

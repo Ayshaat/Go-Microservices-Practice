@@ -1,22 +1,33 @@
 package kafka
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
-	"log"
+	"time"
 
 	"github.com/ayshaat/metrics-consumer/internal/event"
+	"github.com/ayshaat/metrics-consumer/internal/log"
+	"github.com/ayshaat/metrics-consumer/internal/metrics"
 
 	"github.com/Shopify/sarama"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Consumer struct {
-	Ready chan bool
+	Ready   chan bool
+	Logger  log.Logger
+	Tracer  trace.Tracer
+	Metrics *metrics.Metrics
 }
 
-func NewConsumer() *Consumer {
+func NewConsumer(logger log.Logger, m *metrics.Metrics) *Consumer {
 	return &Consumer{
-		Ready: make(chan bool),
+		Ready:   make(chan bool),
+		Logger:  logger,
+		Tracer:  otel.Tracer("metrics-consumer"),
+		Metrics: m,
 	}
 }
 
@@ -30,14 +41,40 @@ func (c *Consumer) Cleanup(sarama.ConsumerGroupSession) error {
 }
 
 func (c *Consumer) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	ctx := context.Background()
+
 	for msg := range claim.Messages() {
-		fmt.Printf("Message topic:%s partition:%d offset:%d\n", msg.Topic, msg.Partition, msg.Offset)
+		start := time.Now()
+		_, span := c.Tracer.Start(ctx, "ConsumeKafkaMessage")
+		span.SetAttributes(
+			attribute.String("kafka.topic", msg.Topic),
+			attribute.Int64("kafka.offset", msg.Offset),
+			attribute.Int("kafka.partition", int(msg.Partition)),
+		)
+
+		c.Logger.Info("Kafka message received",
+			log.String("topic", msg.Topic),
+			log.Int32("partition", msg.Partition),
+			log.Int64("offset", msg.Offset),
+		)
 
 		var event event.KafkaMessage
 
 		err := json.Unmarshal(msg.Value, &event)
+
+		duration := time.Since(start).Seconds()
+		if c.Metrics != nil {
+			c.Metrics.RequestsTotal.WithLabelValues("kafka_consumer_consume").Inc()
+			c.Metrics.RequestDuration.WithLabelValues("kafka_consumer_consume").Observe(duration)
+			if err != nil {
+				c.Metrics.RequestErrors.WithLabelValues("kafka_consumer_consume").Inc()
+			}
+		}
+
 		if err != nil {
-			log.Printf("Error unmarshalling message: %v", err)
+			c.Logger.Error("Failed to unmarshal Kafka message", log.Error(err))
+			span.RecordError(err)
+			span.End()
 			sess.MarkMessage(msg, "")
 
 			continue
@@ -45,12 +82,14 @@ func (c *Consumer) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.C
 
 		eventBytes, err := json.MarshalIndent(event, "", "  ")
 		if err != nil {
-			log.Printf("Failed to marshal event: %v", err)
+			c.Logger.Error("Failed to pretty-print Kafka message", log.Error(err))
+			span.RecordError(err)
 		} else {
-			fmt.Printf("Consumed event:\n%s\n\n", string(eventBytes))
+			c.Logger.Info("Consumed event", log.String("event", string(eventBytes)))
 		}
 
 		sess.MarkMessage(msg, "")
+		span.End()
 	}
 
 	return nil
