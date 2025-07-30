@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"stocks/internal/log"
-	"stocks/internal/log/zap"
 	"stocks/internal/metrics"
 	"time"
 
@@ -39,7 +38,7 @@ func NewGatewayMux(ctx context.Context, cfg *config.Config) (http.Handler, error
 	return mux, nil
 }
 
-func StartGatewayServer(ctx context.Context, cfg *config.Config, logger *zap.Logger, m *metrics.Metrics) error {
+func StartGatewayServer(ctx context.Context, cfg *config.Config, logger log.Logger, m metrics.MetricsInterface) error {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
 	mux := runtime.NewServeMux()

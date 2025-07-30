@@ -61,7 +61,7 @@ func (u *cartUseCase) Add(ctx context.Context, item models.CartItem) error {
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "invalid SKU")
-		u.sendFailedEvent(ctx, item.UserID, item.SKU, item.Count, "invalid SKU")
+		u.sendFailedEvent(ctx, item.UserID, item.SKU, item.Count, "invalid SKU - not registered")
 		u.logger.Error("stockRepo.GetBySKU failed", log.Error(err))
 		return errors.ErrInvalidSKU
 	}
@@ -69,7 +69,7 @@ func (u *cartUseCase) Add(ctx context.Context, item models.CartItem) error {
 	if item.Count > stockItem.Count {
 		reason := "not enough stock"
 		span.SetStatus(codes.Error, reason)
-		u.sendFailedEvent(ctx, item.UserID, item.SKU, item.Count, "not enough stock")
+		u.sendFailedEvent(ctx, item.UserID, item.SKU, item.Count, "not enough stock available")
 		u.logger.Warn("not enough stock", log.Int16("requested", item.Count), log.Int16("available", stockItem.Count))
 		return errors.ErrNotEnoughStock
 	}

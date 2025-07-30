@@ -1,15 +1,12 @@
 package metrics
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
 )
 
 type Metrics struct {
@@ -96,30 +93,4 @@ type responseWriter struct {
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
-}
-
-func UnaryServerInterceptor(m *Metrics) grpc.UnaryServerInterceptor {
-	return func(
-		ctx context.Context,
-		req interface{},
-		info *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler,
-	) (interface{}, error) {
-		start := time.Now()
-
-		resp, err := handler(ctx, req)
-
-		duration := time.Since(start).Seconds()
-		m.RequestsTotal.WithLabelValues(info.FullMethod, "GRPC").Inc() // method + fixed "GRPC" label for method type
-		m.RequestDuration.WithLabelValues(info.FullMethod, "GRPC").Observe(duration)
-
-		if err != nil {
-			st, _ := status.FromError(err)
-			if st.Code() != 0 {
-				m.RequestErrors.WithLabelValues(info.FullMethod, "GRPC").Inc()
-			}
-		}
-
-		return resp, err
-	}
 }

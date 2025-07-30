@@ -5,12 +5,11 @@ import (
 	"time"
 
 	"cart/internal/log"
-	"cart/internal/log/zap"
 
 	"go.opentelemetry.io/otel/trace"
 )
 
-func loggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
+func loggingMiddleware(logger log.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 

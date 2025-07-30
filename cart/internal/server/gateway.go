@@ -9,7 +9,6 @@ import (
 
 	"cart/internal/config"
 	"cart/internal/log"
-	"cart/internal/log/zap"
 	"cart/internal/metrics"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -38,7 +37,7 @@ func NewGatewayMux(ctx context.Context, cfg *config.Config) (http.Handler, error
 	return mux, nil
 }
 
-func StartGatewayServer(ctx context.Context, cfg *config.Config, logger *zap.Logger, m *metrics.Metrics) error {
+func StartGatewayServer(ctx context.Context, cfg *config.Config, logger log.Logger, m metrics.MetricsInterface) error {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
 	mux := runtime.NewServeMux()

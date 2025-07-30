@@ -7,7 +7,7 @@ import (
 	"cart/internal/log"
 )
 
-func MetricsMiddleware(m *Metrics, logger log.Logger) func(http.Handler) http.Handler {
+func MetricsMiddleware(m MetricsInterface, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -20,8 +20,8 @@ func MetricsMiddleware(m *Metrics, logger log.Logger) func(http.Handler) http.Ha
 			path := r.URL.Path
 			method := r.Method
 
-			m.RequestsTotal.WithLabelValues(path, method).Inc()
-			m.RequestDuration.WithLabelValues(path, method).Observe(duration)
+			m.IncRequest(path, method)
+			m.ObserveDuration(path, method, duration)
 
 			if rw.statusCode >= 400 {
 				logger.Error("HTTP request error",
@@ -30,7 +30,7 @@ func MetricsMiddleware(m *Metrics, logger log.Logger) func(http.Handler) http.Ha
 					log.Int("status", rw.statusCode),
 					log.Float64("duration_seconds", duration),
 				)
-				m.RequestErrors.WithLabelValues(path, method).Inc()
+				m.IncError(path, method)
 			} else {
 				logger.Info("HTTP request",
 					log.String("method", method),

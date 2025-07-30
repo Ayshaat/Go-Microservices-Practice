@@ -92,9 +92,9 @@ func Run(envFile string) error {
 
 	go func() {
 		defer wg.Done()
-		logger.Info("Starting Prometheus metrics server on :9000")
+		logger.Info("Starting Prometheus metrics server on " + cfg.MetricsPort)
 
-		metrics.StartMetricsServer(":9000")
+		metrics.StartMetricsServer(cfg.MetricsPort)
 	}()
 
 	go func() {

@@ -12,10 +12,33 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type MetricsInterface interface {
+	IncRequest(path, method string)
+	ObserveDuration(path, method string, duration float64)
+	IncError(path, method string)
+	MetricsHandler() http.Handler
+}
+
 type Metrics struct {
 	RequestsTotal   *prometheus.CounterVec
 	RequestDuration *prometheus.HistogramVec
 	RequestErrors   *prometheus.CounterVec
+}
+
+func (m *Metrics) IncRequest(path, method string) {
+	m.RequestsTotal.WithLabelValues(path, method).Inc()
+}
+
+func (m *Metrics) ObserveDuration(path, method string, duration float64) {
+	m.RequestDuration.WithLabelValues(path, method).Observe(duration)
+}
+
+func (m *Metrics) IncError(path, method string) {
+	m.RequestErrors.WithLabelValues(path, method).Inc()
+}
+
+func (m *Metrics) MetricsHandler() http.Handler {
+	return promhttp.Handler()
 }
 
 func StartMetricsServer(addr string) {
