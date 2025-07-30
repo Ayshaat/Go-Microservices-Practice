@@ -3,7 +3,6 @@ package zap
 import (
 	"cart/internal/log"
 	"fmt"
-	"net"
 	"os"
 
 	"go.uber.org/zap"
@@ -14,7 +13,6 @@ var _ log.Logger = &Logger{}
 
 type Logger struct {
 	L *zap.Logger
-	c net.Conn
 }
 
 func NewLogger() (*Logger, func(), error) {
@@ -39,7 +37,6 @@ func NewLogger() (*Logger, func(), error) {
 
 	cleanup := func() {
 		_ = l.L.Sync()
-		_ = l.c.Close()
 	}
 
 	return l, cleanup, nil

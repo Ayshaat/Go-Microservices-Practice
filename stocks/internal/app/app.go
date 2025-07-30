@@ -35,7 +35,7 @@ func Run(envFile string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	shutdownTracer, err := trace.InitTracer("cart", cfg.JaegerEndpoint)
+	shutdownTracer, err := trace.InitTracer("stocks", cfg.JaegerEndpoint)
 	if err != nil {
 		return fmt.Errorf("failed to initialize tracer: %w", err)
 	}
@@ -104,9 +104,9 @@ func Run(envFile string) error {
 
 	go func() {
 		defer wg.Done()
-		logger.Info("Starting Prometheus metrics server on :9090")
+		logger.Info("Starting Prometheus metrics server on :9000")
 
-		metrics.StartMetricsServer(":9090")
+		metrics.StartMetricsServer(":9000")
 	}()
 
 	go func() {

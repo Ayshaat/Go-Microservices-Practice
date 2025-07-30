@@ -1,7 +1,7 @@
 
 services:
   cart:
-    image: ayshaat/cart:hw10
+#    image: ayshaat/cart:hw10
     build: .
     container_name: cart-service
     ports:

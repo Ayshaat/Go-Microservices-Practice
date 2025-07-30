@@ -83,11 +83,11 @@ func (c *GRPCClient) GetBySKU(ctx context.Context, sku uint32) (models.StockItem
 	duration := time.Since(start).Seconds()
 
 	if c.metrics != nil {
-		c.metrics.RequestsTotal.WithLabelValues("stockclient.GetBySKU").Inc()
-		c.metrics.RequestDuration.WithLabelValues("stockclient.GetBySKU").Observe(duration)
+		c.metrics.RequestsTotal.WithLabelValues("stockclient.GetBySKU", "GRPC").Inc()
+		c.metrics.RequestDuration.WithLabelValues("stockclient.GetBySKU", "GRPC").Observe(duration)
 
 		if err != nil {
-			c.metrics.RequestErrors.WithLabelValues("stockclient.GetBySKU").Inc()
+			c.metrics.RequestErrors.WithLabelValues("stockclient.GetBySKU", "GRPC").Inc()
 		}
 	}
 

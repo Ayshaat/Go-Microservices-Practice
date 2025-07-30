@@ -64,7 +64,7 @@ func traceIDFromCtx(ctx context.Context) string {
 }
 
 func TracingInterceptor() grpc.UnaryServerInterceptor {
-	tracer := otel.Tracer("cart-grpc-server")
+	tracer := otel.Tracer("stock-grpc-server")
 
 	return func(
 		ctx context.Context,

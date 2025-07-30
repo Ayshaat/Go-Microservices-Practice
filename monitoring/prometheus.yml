@@ -5,11 +5,11 @@ global:
 scrape_configs:
   - job_name: 'cart-service'
     static_configs:
-      - targets: ['cart:9090']
+      - targets: ['cart:9000']
 
   - job_name: 'stocks-service'
     static_configs:
-      - targets: ['stocks:9090']
+      - targets: ['stocks:9000']
 
   - job_name: 'metrics-consumer'
     static_configs:

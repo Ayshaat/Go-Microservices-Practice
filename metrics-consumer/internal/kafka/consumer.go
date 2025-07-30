@@ -64,10 +64,10 @@ func (c *Consumer) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.C
 
 		duration := time.Since(start).Seconds()
 		if c.Metrics != nil {
-			c.Metrics.RequestsTotal.WithLabelValues("kafka_consumer_consume").Inc()
-			c.Metrics.RequestDuration.WithLabelValues("kafka_consumer_consume").Observe(duration)
+			c.Metrics.RequestsTotal.WithLabelValues("kafka_consumer_consume", "HTTP").Inc()
+			c.Metrics.RequestDuration.WithLabelValues("kafka_consumer_consume", "HTTP").Observe(duration)
 			if err != nil {
-				c.Metrics.RequestErrors.WithLabelValues("kafka_consumer_consume").Inc()
+				c.Metrics.RequestErrors.WithLabelValues("kafka_consumer_consume", "HTTP").Inc()
 			}
 		}
 
