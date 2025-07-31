@@ -19,7 +19,9 @@ func TestHandler_DeleteItem(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockStockUseCase(ctrl)
-	server := delivery.NewStockServer(mockUsecase)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	server := delivery.NewStockServer(mockUsecase, mockLogger)
 
 	validReq := &stockspb.DeleteItemRequest{
 		Sku:      "1001",
@@ -38,6 +40,7 @@ func TestHandler_DeleteItem(t *testing.T) {
 			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Delete(gomock.Any(), uint32(1001)).Return(nil)
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 			},
 			expectedResult: &stockspb.StockResponse{Message: "Item deleted successfully"},
 		},
@@ -46,6 +49,8 @@ func TestHandler_DeleteItem(t *testing.T) {
 			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Delete(gomock.Any(), uint32(1001)).Return(stdErr.New("db error"))
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 			},
 			expectedErr: "failed to delete item",
 		},

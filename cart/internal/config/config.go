@@ -19,6 +19,8 @@ type Config struct {
 	GRPCPort        string
 	HTTPPort        string
 	GRPCEndpoint    string
+	JaegerEndpoint  string
+	MetricsPort     string
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
@@ -41,6 +43,8 @@ func Load(envFile string) (*Config, error) {
 		GRPCPort:        os.Getenv("GRPC_PORT"),
 		HTTPPort:        os.Getenv("HTTP_PORT"),
 		GRPCEndpoint:    os.Getenv("GRPC_ENDPOINT"),
+		JaegerEndpoint:  os.Getenv("JAEGER_ENDPOINT"),
+		MetricsPort:     os.Getenv("METRICS_PORT"),
 		ReadTimeout:     ReadTimeout,
 		WriteTimeout:    WriteTimeout,
 		IdleTimeout:     IdleTimeout,

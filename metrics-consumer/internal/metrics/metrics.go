@@ -1,0 +1,96 @@
+package metrics
+
+import (
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+type Metrics struct {
+	RequestsTotal   *prometheus.CounterVec
+	RequestDuration *prometheus.HistogramVec
+	RequestErrors   *prometheus.CounterVec
+}
+
+func StartMetricsServer(addr string) {
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		log.Printf("Starting Prometheus metrics server at %s/metrics", addr)
+		if err := http.ListenAndServe(addr, nil); err != nil {
+			log.Fatalf("Failed to start metrics server: %v", err)
+		}
+	}()
+}
+
+func RegisterMetrics() *Metrics {
+	m := &Metrics{
+		RequestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Total number of HTTP requests",
+			},
+			[]string{"path", "method"},
+		),
+		RequestDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "http_response_duration_seconds",
+				Help:    "Duration of HTTP requests in seconds",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{"path", "method"},
+		),
+		RequestErrors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_errors_total",
+				Help: "Total number of HTTP request errors",
+			},
+			[]string{"path", "method"},
+		),
+	}
+
+	prometheus.MustRegister(m.RequestsTotal, m.RequestDuration, m.RequestErrors)
+
+	return m
+}
+
+func WithMetrics(metrics *Metrics, path string, handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		handler(w, r)
+
+		duration := time.Since(start).Seconds()
+		metrics.RequestsTotal.WithLabelValues(path, r.Method).Inc()
+		metrics.RequestDuration.WithLabelValues(path, r.Method).Observe(duration)
+	}
+}
+
+func ErrorMetrics(metrics *Metrics, path string, handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rw := &responseWriter{ResponseWriter: w, statusCode: 200}
+
+		start := time.Now()
+		handler(rw, r)
+		duration := time.Since(start).Seconds()
+
+		metrics.RequestsTotal.WithLabelValues(path, r.Method).Inc()
+		metrics.RequestDuration.WithLabelValues(path, r.Method).Observe(duration)
+
+		if rw.statusCode >= 400 {
+			metrics.RequestErrors.WithLabelValues(path, r.Method).Inc()
+		}
+	}
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}

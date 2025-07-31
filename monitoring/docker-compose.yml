@@ -1,0 +1,43 @@
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: prometheus
+    ports:
+      - "9089:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - shared-net
+      - app-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.55
+    container_name: jaeger
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    networks:
+      - shared-net
+      - app-network
+  grafana:
+    image: grafana/grafana:10.4.1
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - shared-net
+      - app-network
+volumes:
+  grafana-data:
+networks:
+  shared-net:
+    external: true
+    name: shared-net
+  app-network:
+    external: true
+    name: my-global-shared-network

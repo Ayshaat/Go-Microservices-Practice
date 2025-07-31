@@ -3,30 +3,37 @@ package usecase
 import (
 	"cart/internal/errors"
 	"cart/internal/kafka"
+	"cart/internal/log"
 	"cart/internal/models"
 	"cart/internal/repository"
 	"cart/internal/stockclient"
 	"context"
-	"log"
 	"strconv"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type cartUseCase struct {
 	repo      repository.CartRepository
 	stockRepo stockclient.StockRepository
 	producer  kafka.ProducerInterface
+	logger    log.Logger
 }
 
-func NewCartUsecase(repo repository.CartRepository, stockRepo stockclient.StockRepository, producer kafka.ProducerInterface) CartUseCase {
+func NewCartUsecase(repo repository.CartRepository, stockRepo stockclient.StockRepository, producer kafka.ProducerInterface, logger log.Logger) CartUseCase {
 	return &cartUseCase{
 		repo:      repo,
 		stockRepo: stockRepo,
 		producer:  producer,
+		logger:    logger,
 	}
 }
 
-func (u *cartUseCase) sendFailedEvent(userID int64, sku uint32, count int16, reason string) {
+func (u *cartUseCase) sendFailedEvent(ctx context.Context, userID int64, sku uint32, count int16, reason string) {
 	err := u.producer.SendCartItemFailed(
+		ctx,
 		strconv.FormatInt(userID, 10),
 		strconv.FormatUint(uint64(sku), 10),
 		int(count),
@@ -35,39 +42,60 @@ func (u *cartUseCase) sendFailedEvent(userID int64, sku uint32, count int16, rea
 	)
 
 	if err != nil {
-		log.Printf("failed to send CartItemFailed event: %v", err)
+		u.logger.Error("failed to send CartItemFailed event: %v", log.Error(err))
 	}
 }
 
 func (u *cartUseCase) Add(ctx context.Context, item models.CartItem) error {
+	tracer := otel.Tracer("cart-usecase")
+	ctx, span := tracer.Start(ctx, "Add")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.Int64("user.id", item.UserID),
+		attribute.Int64("item.sku", int64(item.SKU)),
+		attribute.Int64("item.count", int64(item.Count)),
+	)
+
 	stockItem, err := u.stockRepo.GetBySKU(ctx, item.SKU)
 	if err != nil {
-		u.sendFailedEvent(item.UserID, item.SKU, item.Count, "invalid SKU")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "invalid SKU")
+		u.sendFailedEvent(ctx, item.UserID, item.SKU, item.Count, "invalid SKU - not registered")
+		u.logger.Error("stockRepo.GetBySKU failed", log.Error(err))
 		return errors.ErrInvalidSKU
 	}
 
 	if item.Count > stockItem.Count {
-		u.sendFailedEvent(item.UserID, item.SKU, item.Count, "not enough stock")
+		reason := "not enough stock"
+		span.SetStatus(codes.Error, reason)
+		u.sendFailedEvent(ctx, item.UserID, item.SKU, item.Count, "not enough stock available")
+		u.logger.Warn("not enough stock", log.Int16("requested", item.Count), log.Int16("available", stockItem.Count))
 		return errors.ErrNotEnoughStock
 	}
 	item.Price = stockItem.Price
 
 	err = u.repo.Upsert(ctx, item)
 	if err != nil {
-		u.sendFailedEvent(item.UserID, item.SKU, item.Count, "db error")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "db error")
+		u.sendFailedEvent(ctx, item.UserID, item.SKU, item.Count, "db error")
+		u.logger.Error("repo.Upsert failed", log.Error(err))
 		return err
 	}
 
 	err = u.producer.SendCartItemAdded(
+		ctx,
 		strconv.FormatInt(item.UserID, 10),
 		strconv.FormatUint(uint64(item.SKU), 10),
 		int(item.Count),
 		"success",
 	)
 	if err != nil {
-		log.Printf("failed to send CartItemAdded event: %v", err)
+		u.logger.Error("failed to send CartItemAdded event: %v", log.Error(err))
+		span.RecordError(err)
 	}
-
+	span.SetStatus(codes.Ok, "success")
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -10,8 +11,11 @@ import (
 	"time"
 
 	"stocks/internal/event"
+	"stocks/internal/log"
 
 	"github.com/Shopify/sarama"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 const maxProducerRetry = 5
@@ -28,9 +32,10 @@ type Producer struct {
 	topic     string
 	partition int32
 	service   string
+	logger    log.Logger
 }
 
-func NewProducer(cfg *ProducerConfig) (*Producer, error) {
+func NewProducer(cfg *ProducerConfig, logger log.Logger) (*Producer, error) {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.NoResponse
 	config.Producer.Return.Successes = true
@@ -41,38 +46,79 @@ func NewProducer(cfg *ProducerConfig) (*Producer, error) {
 
 	producer, err := sarama.NewSyncProducer(cfg.Brokers, config)
 	if err != nil {
+		logger.Error("failed to create Kafka producer", log.Error(err))
 		return nil, fmt.Errorf("failed to create Kafka producer: %w", err)
 	}
+
+	logger.Info("Kafka producer created",
+		log.Strings("brokers", cfg.Brokers),
+		log.String("topic", cfg.Topic),
+		log.Int32("partition", cfg.Partition),
+		log.String("service", cfg.Service),
+	)
 
 	return &Producer{
 		producer:  producer,
 		topic:     cfg.Topic,
 		partition: cfg.Partition,
 		service:   cfg.Service,
+		logger:    logger,
 	}, nil
 }
 
-func (p *Producer) SendSKUCreated(sku string, price float64, count int) error {
+func (p *Producer) SendSKUCreated(ctx context.Context, sku string, price float64, count int) error {
+	tr := otel.Tracer("kafka-producer")
+	ctx, span := tr.Start(ctx, "SendSKUCreated")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("sku", sku),
+		attribute.Float64("price", price),
+		attribute.Int("count", count),
+	)
+
 	payload := event.SKUCreatedPayload{
 		SKU:   sku,
 		Price: price,
 		Count: count,
 	}
 
-	return p.send("sku_created", payload)
+	p.logger.Info("Sending sku_created event",
+		log.String("sku", sku),
+		log.Float64("price", price),
+		log.Int("count", count),
+	)
+
+	return p.send(ctx, "sku_created", payload)
 }
 
-func (p *Producer) SendStockChanged(sku string, count int, price float64) error {
+func (p *Producer) SendStockChanged(ctx context.Context, sku string, count int, price float64) error {
+	tr := otel.Tracer("kafka-producer")
+	ctx, span := tr.Start(ctx, "SendStockChanged")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("sku", sku),
+		attribute.Int("count", count),
+		attribute.Float64("price", price),
+	)
+
 	payload := event.StockChangedPayload{
 		SKU:   sku,
 		Count: count,
 		Price: price,
 	}
 
-	return p.send("stock_changed", payload)
+	p.logger.Info("Sending stock_changed event",
+		log.String("sku", sku),
+		log.Int("count", count),
+		log.Float64("price", price),
+	)
+
+	return p.send(ctx, "stock_changed", payload)
 }
 
-func (p *Producer) send(eventType string, payload interface{}) error {
+func (p *Producer) send(ctx context.Context, eventType string, payload interface{}) error {
 	msg := event.KafkaMessage{
 		Type:      eventType,
 		Service:   p.service,
@@ -82,6 +128,7 @@ func (p *Producer) send(eventType string, payload interface{}) error {
 
 	valueBytes, err := json.Marshal(msg)
 	if err != nil {
+		p.logger.Error("failed to marshal Kafka message", log.Error(err))
 		return fmt.Errorf("failed to marshal Kafka message: %w", err)
 	}
 
@@ -92,16 +139,30 @@ func (p *Producer) send(eventType string, payload interface{}) error {
 		Key:       sarama.StringEncoder(fmt.Sprintf("%s-%d", p.service, time.Now().UnixNano())),
 	}
 
-	_, _, err = p.producer.SendMessage(producerMsg)
+	partition, offset, err := p.producer.SendMessage(producerMsg)
 	if err != nil {
+		p.logger.Error("failed to send Kafka message", log.Error(err))
 		return fmt.Errorf("failed to send Kafka message: %w", err)
 	}
+
+	p.logger.Info("Kafka message sent",
+		log.String("event_type", eventType),
+		log.String("topic", p.topic),
+		log.Int32("partition", partition),
+		log.Int64("offset", offset),
+	)
 
 	return nil
 }
 
 func (p *Producer) Close() error {
-	return p.producer.Close()
+	err := p.producer.Close()
+	if err != nil {
+		p.logger.Error("failed to close Kafka producer", log.Error(err))
+	} else {
+		p.logger.Info("Kafka producer closed")
+	}
+	return err
 }
 
 func NewProducerConfigFromEnv() (*ProducerConfig, error) {

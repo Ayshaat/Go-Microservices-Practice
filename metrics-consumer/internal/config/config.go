@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	KafkaBrokers  []string
-	ConsumerGroup string
-	Topic         string
+	KafkaBrokers   []string
+	ConsumerGroup  string
+	Topic          string
+	JaegerEndpoint string
 }
 
 func Load(envFile string) (*Config, error) {
@@ -28,13 +29,19 @@ func Load(envFile string) (*Config, error) {
 		topic = "metrics"
 	}
 
+	jaegerEndpoint := os.Getenv("JAEGER_ENDPOINT")
+	if jaegerEndpoint == "" {
+		jaegerEndpoint = "http://localhost:14268/api/traces" // or log an error if it's required
+	}
+
 	brokers := []string{}
 	brokers = append(brokers, splitAndTrim(brokersEnv, ",")...)
 
 	return &Config{
-		KafkaBrokers:  brokers,
-		ConsumerGroup: consumerGroup,
-		Topic:         topic,
+		KafkaBrokers:   brokers,
+		ConsumerGroup:  consumerGroup,
+		Topic:          topic,
+		JaegerEndpoint: jaegerEndpoint,
 	}, nil
 }
 

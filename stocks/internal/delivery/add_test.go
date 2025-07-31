@@ -21,7 +21,9 @@ func TestHandler_AddItem(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockStockUseCase(ctrl)
-	server := delivery.NewStockServer(mockUsecase)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	server := delivery.NewStockServer(mockUsecase, mockLogger)
 
 	validReq := &stockspb.AddItemRequest{
 		Sku:      "100",
@@ -40,6 +42,7 @@ func TestHandler_AddItem(t *testing.T) {
 			name: "success",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 				mockUsecase.EXPECT().Add(gomock.Any(), gomock.Any()).Return(nil)
 			},
 			expectedResult: &stockspb.StockResponse{Message: "Item added successfully"},
@@ -49,6 +52,8 @@ func TestHandler_AddItem(t *testing.T) {
 			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Add(gomock.Any(), gomock.Any()).Return(errors.ErrInvalidSKU)
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 			},
 			expectedErr: "invalid SKU",
 		},
@@ -57,6 +62,8 @@ func TestHandler_AddItem(t *testing.T) {
 			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Add(gomock.Any(), gomock.Any()).Return(errors.ErrOwnershipViolation)
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 			},
 			expectedErr: "ownership violation",
 		},
@@ -65,6 +72,8 @@ func TestHandler_AddItem(t *testing.T) {
 			req:  validReq,
 			mockSetup: func() {
 				mockUsecase.EXPECT().Add(gomock.Any(), gomock.Any()).Return(stdErr.New("some error"))
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 			},
 			expectedErr: "some error",
 		},

@@ -20,7 +20,9 @@ func TestHandler_AddItem(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockCartUseCase(ctrl)
-	server := delivery.NewCartServer(mockUsecase)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	server := delivery.NewCartServer(mockUsecase, mockLogger)
 
 	validReq := &cart.AddItemRequest{
 		UserId: "1",
@@ -39,6 +41,8 @@ func TestHandler_AddItem(t *testing.T) {
 			name: "success",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().
+					Info(gomock.Any(), gomock.Any()).AnyTimes()
 				mockUsecase.EXPECT().
 					Add(gomock.Any(), gomock.Any()).
 					Return(nil)
@@ -49,6 +53,9 @@ func TestHandler_AddItem(t *testing.T) {
 			name: "invalid sku error",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().
+					Error(gomock.Any(), gomock.Any()).Times(1)
+
 				mockUsecase.EXPECT().
 					Add(gomock.Any(), gomock.Any()).
 					Return(errors.ErrInvalidSKU)
@@ -59,6 +66,9 @@ func TestHandler_AddItem(t *testing.T) {
 			name: "item exists error",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().
+					Error(gomock.Any(), gomock.Any()).
+					AnyTimes()
 				mockUsecase.EXPECT().
 					Add(gomock.Any(), gomock.Any()).
 					Return(errors.ErrCartItemExists)

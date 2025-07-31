@@ -19,7 +19,9 @@ func TestHandler_ClearCart(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockCartUseCase(ctrl)
-	server := delivery.NewCartServer(mockUsecase)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	server := delivery.NewCartServer(mockUsecase, mockLogger)
 
 	validReq := &cart.ClearCartRequest{
 		UserId: "1",
@@ -36,6 +38,7 @@ func TestHandler_ClearCart(t *testing.T) {
 			name: "success",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 				mockUsecase.EXPECT().Clear(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedResult: &cart.CartResponse{Message: "Cart cleared successfully"},
@@ -44,6 +47,7 @@ func TestHandler_ClearCart(t *testing.T) {
 			name: "internal server error",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
 				mockUsecase.EXPECT().Clear(gomock.Any(), int64(1)).Return(stdErrors.New("db error"))
 			},
 			expectedErr: "db error",

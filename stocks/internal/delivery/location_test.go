@@ -20,7 +20,9 @@ func TestHandler_ListByLocation(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockStockUseCase(ctrl)
-	server := delivery.NewStockServer(mockUsecase)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	server := delivery.NewStockServer(mockUsecase, mockLogger)
 
 	validReq := &stockspb.ListByLocationRequest{
 		Location: "loc1",
@@ -52,6 +54,8 @@ func TestHandler_ListByLocation(t *testing.T) {
 				mockUsecase.EXPECT().
 					ListByLocation(gomock.Any(), "loc1", gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("db error"))
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 			},
 			expectedErr: "failed to list items",
 		},
@@ -62,6 +66,7 @@ func TestHandler_ListByLocation(t *testing.T) {
 				mockUsecase.EXPECT().
 					ListByLocation(gomock.Any(), "loc1", gomock.Any(), gomock.Any()).
 					Return(expectedItems, nil)
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 			},
 			expectedResult: &stockspb.ListByLocationResponse{
 				Location: "loc1",

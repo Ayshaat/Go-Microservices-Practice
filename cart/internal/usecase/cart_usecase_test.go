@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"cart/internal/errors"
+	"cart/internal/log/zap"
 	"cart/internal/models"
 	"cart/internal/usecase/mocks"
 	"context"
@@ -19,12 +20,6 @@ func TestCartUseCase_Add(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockCartRepo := mocks.NewMockCartRepository(ctrl)
-	mockStockRepo := mocks.NewMockStockRepository(ctrl)
-	mockProducer := mocks.NewMockProducerInterface(ctrl)
-
-	u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer)
-
 	ctx := context.Background()
 	item := models.CartItem{
 		UserID: 1,
@@ -34,18 +29,18 @@ func TestCartUseCase_Add(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		mockSetup func()
+		mockSetup func(mockStockRepo *mocks.MockStockRepository, mockCartRepo *mocks.MockCartRepository, mockProducer *mocks.MockProducerInterface)
 		wantErr   error
 	}{
 
 		{
 			name: "success",
-			mockSetup: func() {
+			mockSetup: func(mockStockRepo *mocks.MockStockRepository, mockCartRepo *mocks.MockCartRepository, mockProducer *mocks.MockProducerInterface) {
 				stockItem := models.StockItem{SKU: 100, Count: 10}
-				mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(stockItem, nil)
-				mockCartRepo.EXPECT().Upsert(ctx, item).Return(nil)
+				mockStockRepo.EXPECT().GetBySKU(gomock.Any(), item.SKU).Return(stockItem, nil)
+				mockCartRepo.EXPECT().Upsert(gomock.Any(), item).Return(nil)
 				mockProducer.EXPECT().
-					SendCartItemAdded(fmt.Sprint(item.UserID), fmt.Sprint(item.SKU), int(item.Count), "success").
+					SendCartItemAdded(gomock.Any(), fmt.Sprint(item.UserID), fmt.Sprint(item.SKU), int(item.Count), "success").
 					Return(nil)
 			},
 			wantErr: nil,
@@ -53,10 +48,10 @@ func TestCartUseCase_Add(t *testing.T) {
 
 		{
 			name: "invalid sku error",
-			mockSetup: func() {
-				mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(models.StockItem{}, stdErr.New("not found"))
+			mockSetup: func(mockStockRepo *mocks.MockStockRepository, mockCartRepo *mocks.MockCartRepository, mockProducer *mocks.MockProducerInterface) {
+				mockStockRepo.EXPECT().GetBySKU(gomock.Any(), item.SKU).Return(models.StockItem{}, stdErr.New("not found"))
 				mockProducer.EXPECT().
-					SendCartItemFailed(fmt.Sprint(item.UserID), fmt.Sprint(item.SKU), int(item.Count), "failed", "invalid SKU").
+					SendCartItemFailed(gomock.Any(), fmt.Sprint(item.UserID), fmt.Sprint(item.SKU), int(item.Count), "failed", "invalid SKU - not registered").
 					Return(nil)
 			},
 			wantErr: errors.ErrInvalidSKU,
@@ -64,11 +59,11 @@ func TestCartUseCase_Add(t *testing.T) {
 
 		{
 			name: "not enough stock error",
-			mockSetup: func() {
+			mockSetup: func(mockStockRepo *mocks.MockStockRepository, mockCartRepo *mocks.MockCartRepository, mockProducer *mocks.MockProducerInterface) {
 				stockItem := models.StockItem{SKU: 100, Count: 1}
-				mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(stockItem, nil)
+				mockStockRepo.EXPECT().GetBySKU(gomock.Any(), item.SKU).Return(stockItem, nil)
 				mockProducer.EXPECT().
-					SendCartItemFailed(fmt.Sprint(item.UserID), fmt.Sprint(item.SKU), int(item.Count), "failed", "not enough stock").
+					SendCartItemFailed(gomock.Any(), fmt.Sprint(item.UserID), fmt.Sprint(item.SKU), int(item.Count), "failed", "not enough stock available").
 					Return(nil)
 			},
 
@@ -77,12 +72,12 @@ func TestCartUseCase_Add(t *testing.T) {
 
 		{
 			name: "repo error on upsert",
-			mockSetup: func() {
+			mockSetup: func(mockStockRepo *mocks.MockStockRepository, mockCartRepo *mocks.MockCartRepository, mockProducer *mocks.MockProducerInterface) {
 				stockItem := models.StockItem{SKU: 100, Count: 10}
-				mockStockRepo.EXPECT().GetBySKU(ctx, item.SKU).Return(stockItem, nil)
-				mockCartRepo.EXPECT().Upsert(ctx, item).Return(stdErr.New("db error"))
+				mockStockRepo.EXPECT().GetBySKU(gomock.Any(), item.SKU).Return(stockItem, nil)
+				mockCartRepo.EXPECT().Upsert(gomock.Any(), item).Return(stdErr.New("db error"))
 				mockProducer.EXPECT().
-					SendCartItemFailed(fmt.Sprint(item.UserID), fmt.Sprint(item.SKU), int(item.Count), "failed", "db error").
+					SendCartItemFailed(gomock.Any(), fmt.Sprint(item.UserID), fmt.Sprint(item.SKU), int(item.Count), "failed", "db error").
 					Return(nil)
 			},
 			wantErr: stdErr.New("db error"),
@@ -91,14 +86,41 @@ func TestCartUseCase_Add(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			tt.mockSetup()
 
-			err := u.Add(ctx, item)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockCartRepo := mocks.NewMockCartRepository(ctrl)
+			mockStockRepo := mocks.NewMockStockRepository(ctrl)
+			mockProducer := mocks.NewMockProducerInterface(ctrl)
+
+			logger, cleanup, err := zap.NewLogger()
+			if err != nil {
+				t.Fatalf("failed to create logger: %v", err)
+			}
+			defer cleanup()
+
+			u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer, logger)
+
+			tt.mockSetup(mockStockRepo, mockCartRepo, mockProducer)
+
+			err = u.Add(ctx, item)
+
 			if tt.wantErr == nil {
-				assert.NoError(t, err)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
 			} else {
-				assert.Error(t, err)
-				assert.EqualError(t, err, tt.wantErr.Error())
+				if err == nil {
+					t.Fatalf("expected error %v, got nil", tt.wantErr)
+				}
+
+				if !stdErr.Is(err, tt.wantErr) {
+
+					if err.Error() != tt.wantErr.Error() {
+						t.Fatalf("expected error %v, got %v", tt.wantErr, err)
+					}
+				}
 			}
 		})
 	}
@@ -114,7 +136,13 @@ func TestCartUseCase_Delete(t *testing.T) {
 	mockStockRepo := mocks.NewMockStockRepository(ctrl)
 	mockProducer := mocks.NewMockProducerInterface(ctrl)
 
-	u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer)
+	logger, cleanup, err := zap.NewLogger()
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
+	defer cleanup()
+
+	u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer, logger)
 
 	ctx := context.Background()
 	userID := int64(1)
@@ -235,7 +263,13 @@ func TestCartUseCase_List(t *testing.T) {
 			mockStockRepo := mocks.NewMockStockRepository(ctrl)
 			mockProducer := mocks.NewMockProducerInterface(ctrl)
 
-			u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer)
+			logger, cleanup, err := zap.NewLogger()
+			if err != nil {
+				t.Fatalf("failed to create logger: %v", err)
+			}
+			defer cleanup()
+
+			u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer, logger)
 
 			tt.mockSetup(mockCartRepo, mockStockRepo)
 
@@ -269,7 +303,13 @@ func TestCartUseCase_Clear(t *testing.T) {
 	mockStockRepo := mocks.NewMockStockRepository(ctrl)
 	mockProducer := mocks.NewMockProducerInterface(ctrl)
 
-	u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer)
+	logger, cleanup, err := zap.NewLogger()
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
+	defer cleanup()
+
+	u := NewCartUsecase(mockCartRepo, mockStockRepo, mockProducer, logger)
 
 	ctx := context.Background()
 	userID := int64(1)

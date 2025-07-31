@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -48,29 +49,29 @@ func (mr *MockProducerInterfaceMockRecorder) Close() *gomock.Call {
 }
 
 // SendCartItemAdded mocks base method.
-func (m *MockProducerInterface) SendCartItemAdded(cartId, sku string, count int, status string) error {
+func (m *MockProducerInterface) SendCartItemAdded(ctx context.Context, cartId, sku string, count int, status string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendCartItemAdded", cartId, sku, count, status)
+	ret := m.ctrl.Call(m, "SendCartItemAdded", ctx, cartId, sku, count, status)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SendCartItemAdded indicates an expected call of SendCartItemAdded.
-func (mr *MockProducerInterfaceMockRecorder) SendCartItemAdded(cartId, sku, count, status interface{}) *gomock.Call {
+func (mr *MockProducerInterfaceMockRecorder) SendCartItemAdded(ctx, cartId, sku, count, status interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendCartItemAdded", reflect.TypeOf((*MockProducerInterface)(nil).SendCartItemAdded), cartId, sku, count, status)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendCartItemAdded", reflect.TypeOf((*MockProducerInterface)(nil).SendCartItemAdded), ctx, cartId, sku, count, status)
 }
 
 // SendCartItemFailed mocks base method.
-func (m *MockProducerInterface) SendCartItemFailed(cartId, sku string, count int, status, reason string) error {
+func (m *MockProducerInterface) SendCartItemFailed(ctx context.Context, cartId, sku string, count int, status, reason string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendCartItemFailed", cartId, sku, count, status, reason)
+	ret := m.ctrl.Call(m, "SendCartItemFailed", ctx, cartId, sku, count, status, reason)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SendCartItemFailed indicates an expected call of SendCartItemFailed.
-func (mr *MockProducerInterfaceMockRecorder) SendCartItemFailed(cartId, sku, count, status, reason interface{}) *gomock.Call {
+func (mr *MockProducerInterfaceMockRecorder) SendCartItemFailed(ctx, cartId, sku, count, status, reason interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendCartItemFailed", reflect.TypeOf((*MockProducerInterface)(nil).SendCartItemFailed), cartId, sku, count, status, reason)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendCartItemFailed", reflect.TypeOf((*MockProducerInterface)(nil).SendCartItemFailed), ctx, cartId, sku, count, status, reason)
 }

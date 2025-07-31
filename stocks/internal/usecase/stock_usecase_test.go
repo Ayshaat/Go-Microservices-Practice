@@ -5,6 +5,7 @@ import (
 	stdErr "errors"
 	"fmt"
 	"stocks/internal/errors"
+	"stocks/internal/log/zap"
 	"stocks/internal/models"
 	"stocks/internal/repository/mocks"
 	"stocks/internal/usecase"
@@ -36,11 +37,11 @@ func TestStockUseCase_Add(t *testing.T) {
 		{
 			name: "success new insert",
 			mockSetup: func(mockRepo *mocks.MockStockRepository, mockProducer *mockKafka.MockProducerInterface) {
-				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
-				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(models.StockItem{}, errors.ErrItemNotFound)
-				mockRepo.EXPECT().InsertStockItem(ctx, item).Return(nil)
+				mockRepo.EXPECT().GetSKUInfo(gomock.Any(), item.SKU).Return("t-shirt", "apparel", nil)
+				mockRepo.EXPECT().GetByUserSKU(gomock.Any(), item.UserID, item.SKU).Return(models.StockItem{}, errors.ErrItemNotFound)
+				mockRepo.EXPECT().InsertStockItem(gomock.Any(), item).Return(nil)
 				mockProducer.EXPECT().
-					SendSKUCreated(fmt.Sprint(item.SKU), item.Price, int(item.Count)).
+					SendSKUCreated(gomock.Any(), fmt.Sprint(item.SKU), item.Price, int(item.Count)).
 					Return(nil)
 			},
 
@@ -53,11 +54,11 @@ func TestStockUseCase_Add(t *testing.T) {
 				existing := item
 				existing.Count = 3
 
-				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
-				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(existing, nil)
-				mockRepo.EXPECT().UpdateCount(ctx, item.UserID, item.SKU, existing.Count+item.Count, item.Price).Return(nil)
+				mockRepo.EXPECT().GetSKUInfo(gomock.Any(), item.SKU).Return("t-shirt", "apparel", nil)
+				mockRepo.EXPECT().GetByUserSKU(gomock.Any(), item.UserID, item.SKU).Return(existing, nil)
+				mockRepo.EXPECT().UpdateCount(gomock.Any(), item.UserID, item.SKU, existing.Count+item.Count, item.Price).Return(nil)
 				mockProducer.EXPECT().
-					SendStockChanged(fmt.Sprint(existing.SKU), int(existing.Count+item.Count), existing.Price).
+					SendStockChanged(gomock.Any(), fmt.Sprint(existing.SKU), int(existing.Count+item.Count), existing.Price).
 					Return(nil)
 			},
 			wantErr: nil,
@@ -66,7 +67,7 @@ func TestStockUseCase_Add(t *testing.T) {
 		{
 			name: "invalid sku error",
 			mockSetup: func(mockRepo *mocks.MockStockRepository, _ *mockKafka.MockProducerInterface) {
-				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("", "", stdErr.New("not found"))
+				mockRepo.EXPECT().GetSKUInfo(gomock.Any(), item.SKU).Return("", "", stdErr.New("not found"))
 			},
 			wantErr: errors.ErrInvalidSKU,
 		},
@@ -75,8 +76,8 @@ func TestStockUseCase_Add(t *testing.T) {
 			mockSetup: func(mockRepo *mocks.MockStockRepository, _ *mockKafka.MockProducerInterface) {
 				existing := item
 				existing.UserID = 999
-				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
-				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(existing, nil)
+				mockRepo.EXPECT().GetSKUInfo(gomock.Any(), item.SKU).Return("t-shirt", "apparel", nil)
+				mockRepo.EXPECT().GetByUserSKU(gomock.Any(), item.UserID, item.SKU).Return(existing, nil)
 			},
 			wantErr: errors.ErrOwnershipViolation,
 		},
@@ -84,8 +85,8 @@ func TestStockUseCase_Add(t *testing.T) {
 		{
 			name: "other repo error",
 			mockSetup: func(mockRepo *mocks.MockStockRepository, _ *mockKafka.MockProducerInterface) {
-				mockRepo.EXPECT().GetSKUInfo(ctx, item.SKU).Return("t-shirt", "apparel", nil)
-				mockRepo.EXPECT().GetByUserSKU(ctx, item.UserID, item.SKU).Return(models.StockItem{}, stdErr.New("some error"))
+				mockRepo.EXPECT().GetSKUInfo(gomock.Any(), item.SKU).Return("t-shirt", "apparel", nil)
+				mockRepo.EXPECT().GetByUserSKU(gomock.Any(), item.UserID, item.SKU).Return(models.StockItem{}, stdErr.New("some error"))
 			},
 			wantErr: stdErr.New("some error"),
 		},
@@ -101,10 +102,16 @@ func TestStockUseCase_Add(t *testing.T) {
 			mockProducer := mockKafka.NewMockProducerInterface(ctrl)
 			txManager := &mockTxManager{}
 
-			uc := usecase.NewStockUsecase(mockRepo, txManager, mockProducer)
+			logger, cleanup, err := zap.NewLogger()
+			if err != nil {
+				t.Fatalf("failed to create logger: %v", err)
+			}
+			defer cleanup()
+
+			uc := usecase.NewStockUsecase(mockRepo, txManager, mockProducer, logger)
 			tt.mockSetup(mockRepo, mockProducer)
 
-			err := uc.Add(ctx, item)
+			err = uc.Add(ctx, item)
 
 			if tt.wantErr == nil {
 				if err != nil {
@@ -129,7 +136,13 @@ func TestStockUseCase_Delete(t *testing.T) {
 	mockProducer := mockKafka.NewMockProducerInterface(ctrl)
 	txManager := &mockTxManager{}
 
-	uc := usecase.NewStockUsecase(mockRepo, txManager, mockProducer)
+	logger, cleanup, err := zap.NewLogger()
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
+	defer cleanup()
+
+	uc := usecase.NewStockUsecase(mockRepo, txManager, mockProducer, logger)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -141,14 +154,14 @@ func TestStockUseCase_Delete(t *testing.T) {
 		{
 			name: "success delete",
 			mockSetup: func() {
-				mockRepo.EXPECT().Delete(ctx, uint32(1001)).Return(nil)
+				mockRepo.EXPECT().Delete(gomock.Any(), uint32(1001)).Return(nil)
 			},
 			wantErr: nil,
 		},
 		{
 			name: "delete error",
 			mockSetup: func() {
-				mockRepo.EXPECT().Delete(ctx, uint32(1001)).Return(stdErr.New("delete error"))
+				mockRepo.EXPECT().Delete(gomock.Any(), uint32(1001)).Return(stdErr.New("delete error"))
 			},
 			wantErr: stdErr.New("delete error"),
 		},
@@ -180,7 +193,13 @@ func TestStockUseCase_GetBySKU(t *testing.T) {
 	mockProducer := mockKafka.NewMockProducerInterface(ctrl)
 	txManager := &mockTxManager{}
 
-	uc := usecase.NewStockUsecase(mockRepo, txManager, mockProducer)
+	logger, cleanup, err := zap.NewLogger()
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
+	defer cleanup()
+
+	uc := usecase.NewStockUsecase(mockRepo, txManager, mockProducer, logger)
 	ctx := context.Background()
 
 	expectedItem := models.StockItem{
@@ -250,7 +269,13 @@ func TestStockUseCase_ListByLocation(t *testing.T) {
 	mockProducer := mockKafka.NewMockProducerInterface(ctrl)
 	txManager := &mockTxManager{}
 
-	uc := usecase.NewStockUsecase(mockRepo, txManager, mockProducer)
+	logger, cleanup, err := zap.NewLogger()
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
+	defer cleanup()
+
+	uc := usecase.NewStockUsecase(mockRepo, txManager, mockProducer, logger)
 	ctx := context.Background()
 
 	expectedItems := []models.StockItem{

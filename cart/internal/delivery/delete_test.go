@@ -20,7 +20,9 @@ func TestHandler_DeleteItem(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockUsecase := mocks.NewMockCartUseCase(ctrl)
-	server := delivery.NewCartServer(mockUsecase)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	server := delivery.NewCartServer(mockUsecase, mockLogger)
 
 	validReq := &cart.DeleteItemRequest{
 		UserId: "1",
@@ -38,6 +40,7 @@ func TestHandler_DeleteItem(t *testing.T) {
 			name: "success",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 				mockUsecase.EXPECT().Delete(gomock.Any(), int64(1), uint32(100)).Return(nil)
 			},
 			expectedResult: &cart.CartResponse{Message: "Item deleted successfully"},
@@ -46,6 +49,8 @@ func TestHandler_DeleteItem(t *testing.T) {
 			name: "not found error",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 				mockUsecase.EXPECT().Delete(gomock.Any(), int64(1), uint32(100)).Return(errors.ErrCartItemNotFound)
 			},
 			expectedErr: errors.ErrCartItemNotFound.Error(),
@@ -54,6 +59,8 @@ func TestHandler_DeleteItem(t *testing.T) {
 			name: "internal server error",
 			req:  validReq,
 			mockSetup: func() {
+				mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 				mockUsecase.EXPECT().Delete(gomock.Any(), int64(1), uint32(100)).Return(stdErrors.New("db error"))
 			},
 			expectedErr: "db error",

@@ -1,7 +1,7 @@
 
 services:
   cart:
-    image: ayshaat/cart:hw10
+    image: ayshaat/cart:hw11
     build: .
     container_name: cart-service
     ports:
@@ -33,6 +33,7 @@ services:
       retries: 3
     networks:
       - app-network
+  
 
 networks:
   app-network:
