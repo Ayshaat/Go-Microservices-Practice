@@ -23,7 +23,7 @@ services:
     environment:
       POSTGRES_DB: cart
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: lavender@30.06.04
+      POSTGRES_PASSWORD: 
     ports:
       - "5434:5432"
     healthcheck:
